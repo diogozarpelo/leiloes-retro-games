@@ -21,7 +21,7 @@ class MainActivity : ComponentActivity() {
             LeilõesRetroGamesTheme {
                 Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
                     Greeting(
-                        name = "Android",
+                        name = "Leilões Retro Games",
                         modifier = Modifier.padding(innerPadding)
                     )
                 }
