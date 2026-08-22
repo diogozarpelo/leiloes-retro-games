@@ -26,5 +26,9 @@ data class Auction(
     val notes: String = "",
     val initialBidInCents: Long,
     val bidIncrementInCents: Long,
-    val buyoutPriceInCents: Long? = null
+    val buyoutPriceInCents: Long? = null,
+    val finalPriceInCents: Long? = null,
+    val condition: ItemCondition = ItemCondition.NOT_INFORMED,
+    val status: AuctionStatus = AuctionStatus.ACTIVE,
+    val alertsEnabled: Boolean = true
 )
