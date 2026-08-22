@@ -8,9 +8,14 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.Button
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.ui.unit.dp
 import br.com.diogozarpelao.leiloesretrogames.ui.theme.LeilõesRetroGamesTheme
 
 class MainActivity : ComponentActivity() {
@@ -20,8 +25,7 @@ class MainActivity : ComponentActivity() {
         setContent {
             LeilõesRetroGamesTheme {
                 Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
-                    Greeting(
-                        name = "Leilões Retro Games",
+                    ActiveAuctionsScreen(
                         modifier = Modifier.padding(innerPadding)
                     )
                 }
@@ -31,17 +35,36 @@ class MainActivity : ComponentActivity() {
 }
 
 @Composable
-fun Greeting(name: String, modifier: Modifier = Modifier) {
-    Text(
-        text = "Hello $name!",
+fun ActiveAuctionsScreen(modifier: Modifier = Modifier) {
+    Column(
         modifier = modifier
-    )
+            .fillMaxSize()
+            .padding(24.dp),
+        verticalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        Text(
+            text = "Leilões ativos",
+            style = MaterialTheme.typography.headlineMedium
+        )
+
+        Text(
+            text = "Nenhum leilão cadastrado.",
+            style = MaterialTheme.typography.bodyLarge
+        )
+        Button(
+            onClick = {
+                // A tela de cadastro será aberta aqui futuramente.
+            }
+        ) {
+            Text(text = "Cadastrar leilão")
+        }
+    }
 }
 
 @Preview(showBackground = true)
 @Composable
-fun GreetingPreview() {
+fun ActiveAuctionsScreenPreview() {
     LeilõesRetroGamesTheme {
-        Greeting("Android")
+        ActiveAuctionsScreen()
     }
 }
