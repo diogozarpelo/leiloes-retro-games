@@ -1,5 +1,8 @@
 package br.com.diogozarpelao.leiloesretrogames.model
 
+import androidx.room.Entity
+import androidx.room.PrimaryKey
+
 enum class ItemCondition {
     EXCELLENT,
     GOOD,
@@ -17,7 +20,9 @@ enum class AuctionStatus {
     WON_PAID
 }
 
+@Entity(tableName = "auctions")
 data class Auction(
+    @PrimaryKey(autoGenerate = true)
     val id: Long = 0,
     val title: String,
     val platform: String,
