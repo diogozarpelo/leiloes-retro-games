@@ -19,6 +19,7 @@ import br.com.diogozarpelao.leiloesretrogames.ui.theme.LeilõesRetroGamesTheme
 @Composable
 fun ActiveAuctionsScreen(
     auctions: List<Auction>,
+    onAddAuction: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     Column(
@@ -55,9 +56,7 @@ fun ActiveAuctionsScreen(
         }
 
         Button(
-            onClick = {
-                // A tela de cadastro será aberta futuramente.
-            }
+            onClick = onAddAuction
         ) {
             Text(text = "Cadastrar leilão")
         }
@@ -69,7 +68,8 @@ fun ActiveAuctionsScreen(
 fun ActiveAuctionsScreenPreview() {
     LeilõesRetroGamesTheme {
         ActiveAuctionsScreen(
-            auctions = emptyList()
+            auctions = emptyList(),
+            onAddAuction = {}
         )
     }
 }
