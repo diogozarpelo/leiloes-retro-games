@@ -12,11 +12,14 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.produceState
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import br.com.diogozarpelao.leiloesretrogames.model.Auction
 import br.com.diogozarpelao.leiloesretrogames.ui.theme.LeilõesRetroGamesTheme
+import kotlinx.coroutines.delay
 
 @Composable
 fun ActiveAuctionsScreen(
@@ -73,6 +76,21 @@ private fun AuctionCard(
     auction: Auction,
     onClick: () -> Unit
 ) {
+    val remainingTime by produceState(
+        initialValue = calculateRemainingTime(
+            auction.endTimeMillis
+        ),
+        key1 = auction.endTimeMillis
+    ) {
+        while (true) {
+            value = calculateRemainingTime(
+                auction.endTimeMillis
+            )
+
+            delay(1_000)
+        }
+    }
+
     Card(
         onClick = onClick,
         modifier = Modifier.fillMaxWidth()
@@ -90,7 +108,35 @@ private fun AuctionCard(
                 text = auction.platform,
                 style = MaterialTheme.typography.bodyMedium
             )
+
+            Text(
+                text = "Tempo restante: $remainingTime",
+                style = MaterialTheme.typography.bodyMedium
+            )
         }
+    }
+}
+
+private fun calculateRemainingTime(
+    endTimeMillis: Long
+): String {
+    val remainingMillis =
+        endTimeMillis - System.currentTimeMillis()
+
+    if (remainingMillis <= 0) {
+        return "Encerrado"
+    }
+
+    val totalSeconds = remainingMillis / 1_000
+    val days = totalSeconds / 86_400
+    val hours = (totalSeconds % 86_400) / 3_600
+    val minutes = (totalSeconds % 3_600) / 60
+    val seconds = totalSeconds % 60
+
+    return if (days > 0) {
+        "${days}d ${hours}h ${minutes}min"
+    } else {
+        "${hours}h ${minutes}min ${seconds}s"
     }
 }
 
@@ -99,7 +145,18 @@ private fun AuctionCard(
 fun ActiveAuctionsScreenPreview() {
     LeilõesRetroGamesTheme {
         ActiveAuctionsScreen(
-            auctions = emptyList(),
+            auctions = listOf(
+                Auction(
+                    id = 1,
+                    title = "Resident Evil 2",
+                    platform = "PlayStation",
+                    postUrl = "https://facebook.com",
+                    endTimeMillis =
+                        System.currentTimeMillis() + 3_600_000,
+                    initialBidInCents = 500,
+                    bidIncrementInCents = 500
+                )
+            ),
             onAuctionClick = {},
             onAddAuction = {}
         )
