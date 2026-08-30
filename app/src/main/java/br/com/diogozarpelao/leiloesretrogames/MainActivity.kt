@@ -14,6 +14,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.lifecycle.viewmodel.compose.viewModel
+import br.com.diogozarpelao.leiloesretrogames.model.AuctionStatus
 import br.com.diogozarpelao.leiloesretrogames.ui.screens.ActiveAuctionsScreen
 import br.com.diogozarpelao.leiloesretrogames.ui.screens.AddAuctionScreen
 import br.com.diogozarpelao.leiloesretrogames.ui.screens.AuctionDetailsScreen
@@ -88,7 +89,24 @@ class MainActivity : ComponentActivity() {
                                 onStatusChange = { newStatus ->
                                     auctionViewModel.update(
                                         selectedAuction.copy(
-                                            status = newStatus
+                                            status = newStatus,
+                                            finalPriceInCents =
+                                                if (
+                                                    newStatus ==
+                                                    AuctionStatus.NOT_WON
+                                                ) {
+                                                    null
+                                                } else {
+                                                    selectedAuction
+                                                        .finalPriceInCents
+                                                }
+                                        )
+                                    )
+                                },
+                                onFinalPriceChange = { finalPrice ->
+                                    auctionViewModel.update(
+                                        selectedAuction.copy(
+                                            finalPriceInCents = finalPrice
                                         )
                                     )
                                 },

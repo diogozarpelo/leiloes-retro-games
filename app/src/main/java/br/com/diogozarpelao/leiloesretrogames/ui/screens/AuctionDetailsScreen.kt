@@ -42,6 +42,7 @@ fun AuctionDetailsScreen(
     onBack: () -> Unit,
     onEdit: () -> Unit,
     onStatusChange: (AuctionStatus) -> Unit,
+    onFinalPriceChange: (Long) -> Unit,
     onDelete: () -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -91,7 +92,9 @@ fun AuctionDetailsScreen(
         if (auction.endTimeMillis <= System.currentTimeMillis()) {
             AuctionResultActions(
                 status = auction.status,
-                onStatusChange = onStatusChange
+                onStatusChange = onStatusChange,
+                finalPriceInCents = auction.finalPriceInCents,
+                onFinalPriceChange = onFinalPriceChange
             )
         }
 
@@ -246,7 +249,8 @@ fun AuctionDetailsScreenPreview() {
             onBack = {},
             onEdit = {},
             onStatusChange = {},
-            onDelete = {}
+            onDelete = {},
+            onFinalPriceChange = {}
         )
     }
 }
