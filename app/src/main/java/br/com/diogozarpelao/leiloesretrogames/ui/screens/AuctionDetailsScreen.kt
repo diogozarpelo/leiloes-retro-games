@@ -7,10 +7,16 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -32,8 +38,13 @@ private val detailsDateFormatter: DateTimeFormatter =
 fun AuctionDetailsScreen(
     auction: Auction,
     onBack: () -> Unit,
+    onDelete: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+    var showDeleteDialog by remember {
+        mutableStateOf(false)
+    }
+
     Column(
         modifier = modifier
             .fillMaxSize()
@@ -52,70 +63,79 @@ fun AuctionDetailsScreen(
             style = MaterialTheme.typography.headlineMedium
         )
 
+        DetailItem("Plataforma", auction.platform)
+        DetailItem("Encerramento", formatDateTime(auction.endTimeMillis))
+        DetailItem("Lance inicial", formatMoney(auction.initialBidInCents))
         DetailItem(
-            label = "Plataforma",
-            value = auction.platform
+            "Múltiplo dos lances",
+            formatMoney(auction.bidIncrementInCents)
         )
 
-        DetailItem(
-            label = "Encerramento",
-            value = formatDateTime(auction.endTimeMillis)
-        )
-
-        DetailItem(
-            label = "Lance inicial",
-            value = formatMoney(auction.initialBidInCents)
-        )
-
-        DetailItem(
-            label = "Múltiplo dos lances",
-            value = formatMoney(auction.bidIncrementInCents)
-        )
-
-        auction.buyoutPriceInCents?.let { value ->
-            DetailItem(
-                label = "Valor de arremate",
-                value = formatMoney(value)
-            )
+        auction.buyoutPriceInCents?.let {
+            DetailItem("Valor de arremate", formatMoney(it))
         }
 
-        auction.finalPriceInCents?.let { value ->
-            DetailItem(
-                label = "Valor final",
-                value = formatMoney(value)
-            )
+        auction.finalPriceInCents?.let {
+            DetailItem("Valor final", formatMoney(it))
         }
 
-        DetailItem(
-            label = "Conservação",
-            value = formatCondition(auction.condition)
-        )
+        DetailItem("Conservação", formatCondition(auction.condition))
+        DetailItem("Status", formatStatus(auction.status))
 
         DetailItem(
-            label = "Status",
-            value = formatStatus(auction.status)
+            "Alertas",
+            if (auction.alertsEnabled) "Ativados" else "Desativados"
         )
 
-        DetailItem(
-            label = "Alertas",
-            value = if (auction.alertsEnabled) {
-                "Ativados"
-            } else {
-                "Desativados"
-            }
-        )
-
-        DetailItem(
-            label = "Link da publicação",
-            value = auction.postUrl
-        )
+        DetailItem("Link da publicação", auction.postUrl)
 
         if (auction.notes.isNotBlank()) {
-            DetailItem(
-                label = "Observações",
-                value = auction.notes
-            )
+            DetailItem("Observações", auction.notes)
         }
+
+        OutlinedButton(
+            onClick = {
+                showDeleteDialog = true
+            },
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Text("Excluir leilão")
+        }
+    }
+
+    if (showDeleteDialog) {
+        AlertDialog(
+            onDismissRequest = {
+                showDeleteDialog = false
+            },
+            title = {
+                Text("Excluir leilão?")
+            },
+            text = {
+                Text(
+                    "Esta ação removerá o leilão permanentemente."
+                )
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        showDeleteDialog = false
+                        onDelete()
+                    }
+                ) {
+                    Text("Excluir")
+                }
+            },
+            dismissButton = {
+                TextButton(
+                    onClick = {
+                        showDeleteDialog = false
+                    }
+                ) {
+                    Text("Cancelar")
+                }
+            }
+        )
     }
 }
 
@@ -191,7 +211,8 @@ fun AuctionDetailsScreenPreview() {
                 bidIncrementInCents = 500,
                 buyoutPriceInCents = 10_000
             ),
-            onBack = {}
+            onBack = {},
+            onDelete = {}
         )
     }
 }

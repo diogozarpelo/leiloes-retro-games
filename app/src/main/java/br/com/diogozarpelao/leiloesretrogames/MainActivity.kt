@@ -59,6 +59,10 @@ class MainActivity : ComponentActivity() {
                                 onBack = {
                                     selectedAuctionId = null
                                 },
+                                onDelete = {
+                                    auctionViewModel.delete(selectedAuction)
+                                    selectedAuctionId = null
+                                },
                                 modifier = Modifier.padding(innerPadding)
                             )
                         }
