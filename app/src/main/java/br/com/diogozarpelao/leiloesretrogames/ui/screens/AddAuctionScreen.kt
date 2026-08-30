@@ -25,6 +25,7 @@ import androidx.compose.ui.unit.dp
 import br.com.diogozarpelao.leiloesretrogames.model.Auction
 import br.com.diogozarpelao.leiloesretrogames.ui.theme.LeilõesRetroGamesTheme
 import java.math.BigDecimal
+import java.time.Instant
 import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.LocalTime
@@ -41,23 +42,68 @@ private val timeFormatter: DateTimeFormatter =
 fun AddAuctionScreen(
     onSave: (Auction) -> Unit,
     onCancel: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    auctionToEdit: Auction? = null
 ) {
-    var title by rememberSaveable { mutableStateOf("") }
-    var platform by rememberSaveable { mutableStateOf("") }
-    var postUrl by rememberSaveable { mutableStateOf("") }
-    var endDate by rememberSaveable { mutableStateOf("") }
-    var endTime by rememberSaveable { mutableStateOf("") }
-    var initialBid by rememberSaveable { mutableStateOf("") }
-    var bidIncrement by rememberSaveable { mutableStateOf("") }
-    var buyoutPrice by rememberSaveable { mutableStateOf("") }
-    var notes by rememberSaveable { mutableStateOf("") }
+    val stateKey = auctionToEdit?.id ?: 0L
 
-    val endTimeMillis = parseEndTimeMillis(
-        date = endDate,
-        time = endTime
-    )
+    var title by rememberSaveable(stateKey) {
+        mutableStateOf(auctionToEdit?.title.orEmpty())
+    }
 
+    var platform by rememberSaveable(stateKey) {
+        mutableStateOf(auctionToEdit?.platform.orEmpty())
+    }
+
+    var postUrl by rememberSaveable(stateKey) {
+        mutableStateOf(auctionToEdit?.postUrl.orEmpty())
+    }
+
+    var endDate by rememberSaveable(stateKey) {
+        mutableStateOf(
+            auctionToEdit?.let {
+                formatDateForForm(it.endTimeMillis)
+            }.orEmpty()
+        )
+    }
+
+    var endTime by rememberSaveable(stateKey) {
+        mutableStateOf(
+            auctionToEdit?.let {
+                formatTimeForForm(it.endTimeMillis)
+            }.orEmpty()
+        )
+    }
+
+    var initialBid by rememberSaveable(stateKey) {
+        mutableStateOf(
+            auctionToEdit?.let {
+                formatMoneyForForm(it.initialBidInCents)
+            }.orEmpty()
+        )
+    }
+
+    var bidIncrement by rememberSaveable(stateKey) {
+        mutableStateOf(
+            auctionToEdit?.let {
+                formatMoneyForForm(it.bidIncrementInCents)
+            }.orEmpty()
+        )
+    }
+
+    var buyoutPrice by rememberSaveable(stateKey) {
+        mutableStateOf(
+            auctionToEdit?.buyoutPriceInCents?.let {
+                formatMoneyForForm(it)
+            }.orEmpty()
+        )
+    }
+
+    var notes by rememberSaveable(stateKey) {
+        mutableStateOf(auctionToEdit?.notes.orEmpty())
+    }
+
+    val endTimeMillis = parseEndTimeMillis(endDate, endTime)
     val initialBidInCents = parseMoneyToCents(initialBid)
     val bidIncrementInCents = parseMoneyToCents(bidIncrement)
 
@@ -91,7 +137,11 @@ fun AddAuctionScreen(
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
         Text(
-            text = "Cadastrar leilão",
+            text = if (auctionToEdit == null) {
+                "Cadastrar leilão"
+            } else {
+                "Editar leilão"
+            },
             style = MaterialTheme.typography.headlineMedium
         )
 
@@ -188,6 +238,7 @@ fun AddAuctionScreen(
             onClick = {
                 onSave(
                     Auction(
+                        id = auctionToEdit?.id ?: 0,
                         title = title.trim(),
                         platform = platform.trim(),
                         postUrl = postUrl.trim(),
@@ -197,14 +248,30 @@ fun AddAuctionScreen(
                             requireNotNull(initialBidInCents),
                         bidIncrementInCents =
                             requireNotNull(bidIncrementInCents),
-                        buyoutPriceInCents = buyoutPriceInCents
+                        buyoutPriceInCents = buyoutPriceInCents,
+                        finalPriceInCents =
+                            auctionToEdit?.finalPriceInCents,
+                        condition = auctionToEdit?.condition
+                            ?: br.com.diogozarpelao.leiloesretrogames
+                                .model.ItemCondition.NOT_INFORMED,
+                        status = auctionToEdit?.status
+                            ?: br.com.diogozarpelao.leiloesretrogames
+                                .model.AuctionStatus.ACTIVE,
+                        alertsEnabled =
+                            auctionToEdit?.alertsEnabled ?: true
                     )
                 )
             },
             enabled = formIsValid,
             modifier = Modifier.fillMaxWidth()
         ) {
-            Text("Salvar")
+            Text(
+                if (auctionToEdit == null) {
+                    "Salvar"
+                } else {
+                    "Salvar alterações"
+                }
+            )
         }
 
         TextButton(
@@ -221,15 +288,8 @@ private fun parseEndTimeMillis(
     time: String
 ): Long? {
     return runCatching {
-        val localDate = LocalDate.parse(
-            date.trim(),
-            dateFormatter
-        )
-
-        val localTime = LocalTime.parse(
-            time.trim(),
-            timeFormatter
-        )
+        val localDate = LocalDate.parse(date.trim(), dateFormatter)
+        val localTime = LocalTime.parse(time.trim(), timeFormatter)
 
         LocalDateTime.of(localDate, localTime)
             .atZone(ZoneId.systemDefault())
@@ -258,6 +318,27 @@ private fun parseMoneyToCents(value: String): Long? {
             .movePointRight(2)
             .longValueExact()
     }.getOrNull()
+}
+
+private fun formatDateForForm(value: Long): String {
+    return Instant.ofEpochMilli(value)
+        .atZone(ZoneId.systemDefault())
+        .toLocalDate()
+        .format(dateFormatter)
+}
+
+private fun formatTimeForForm(value: Long): String {
+    return Instant.ofEpochMilli(value)
+        .atZone(ZoneId.systemDefault())
+        .toLocalTime()
+        .format(timeFormatter)
+}
+
+private fun formatMoneyForForm(valueInCents: Long): String {
+    return BigDecimal.valueOf(valueInCents, 2)
+        .stripTrailingZeros()
+        .toPlainString()
+        .replace(".", ",")
 }
 
 @Preview(showBackground = true)

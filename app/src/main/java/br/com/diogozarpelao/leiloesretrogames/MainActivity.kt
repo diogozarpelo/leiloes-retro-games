@@ -44,8 +44,16 @@ class MainActivity : ComponentActivity() {
                 mutableStateOf<Long?>(null)
             }
 
+            var editingAuctionId by rememberSaveable {
+                mutableStateOf<Long?>(null)
+            }
+
             val selectedAuction = auctions.firstOrNull { auction ->
                 auction.id == selectedAuctionId
+            }
+
+            val auctionBeingEdited = auctions.firstOrNull { auction ->
+                auction.id == editingAuctionId
             }
 
             LeilõesRetroGamesTheme {
@@ -53,11 +61,29 @@ class MainActivity : ComponentActivity() {
                     modifier = Modifier.fillMaxSize()
                 ) { innerPadding ->
                     when {
+                        auctionBeingEdited != null -> {
+                            AddAuctionScreen(
+                                auctionToEdit = auctionBeingEdited,
+                                onSave = { updatedAuction ->
+                                    auctionViewModel.update(updatedAuction)
+                                    editingAuctionId = null
+                                    selectedAuctionId = updatedAuction.id
+                                },
+                                onCancel = {
+                                    editingAuctionId = null
+                                },
+                                modifier = Modifier.padding(innerPadding)
+                            )
+                        }
+
                         selectedAuction != null -> {
                             AuctionDetailsScreen(
                                 auction = selectedAuction,
                                 onBack = {
                                     selectedAuctionId = null
+                                },
+                                onEdit = {
+                                    editingAuctionId = selectedAuction.id
                                 },
                                 onDelete = {
                                     auctionViewModel.delete(selectedAuction)

@@ -40,6 +40,7 @@ private val detailsDateFormatter: DateTimeFormatter =
 fun AuctionDetailsScreen(
     auction: Auction,
     onBack: () -> Unit,
+    onEdit: () -> Unit,
     onDelete: () -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -106,6 +107,13 @@ fun AuctionDetailsScreen(
             modifier = Modifier.fillMaxWidth()
         ) {
             Text("Abrir publicação")
+        }
+
+        OutlinedButton(
+            onClick = onEdit,
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Text("Editar leilão")
         }
 
         OutlinedButton(
@@ -227,6 +235,7 @@ fun AuctionDetailsScreenPreview() {
                 buyoutPriceInCents = 10_000
             ),
             onBack = {},
+            onEdit = {},
             onDelete = {}
         )
     }
