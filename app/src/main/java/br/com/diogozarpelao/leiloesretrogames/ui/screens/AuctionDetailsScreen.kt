@@ -41,6 +41,7 @@ fun AuctionDetailsScreen(
     auction: Auction,
     onBack: () -> Unit,
     onEdit: () -> Unit,
+    onStatusChange: (AuctionStatus) -> Unit,
     onDelete: () -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -86,6 +87,13 @@ fun AuctionDetailsScreen(
 
         DetailItem("Conservação", formatCondition(auction.condition))
         DetailItem("Status", formatStatus(auction.status))
+
+        if (auction.endTimeMillis <= System.currentTimeMillis()) {
+            AuctionResultActions(
+                status = auction.status,
+                onStatusChange = onStatusChange
+            )
+        }
 
         DetailItem(
             "Alertas",
@@ -228,14 +236,16 @@ fun AuctionDetailsScreenPreview() {
                 title = "Resident Evil 2",
                 platform = "PlayStation",
                 postUrl = "https://facebook.com",
-                endTimeMillis = 1_800_000_000_000,
+                endTimeMillis = 1_700_000_000_000,
                 notes = "Jogo original em bom estado.",
                 initialBidInCents = 500,
                 bidIncrementInCents = 500,
-                buyoutPriceInCents = 10_000
+                buyoutPriceInCents = 10_000,
+                status = AuctionStatus.WON_PENDING_PAYMENT
             ),
             onBack = {},
             onEdit = {},
+            onStatusChange = {},
             onDelete = {}
         )
     }

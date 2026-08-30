@@ -85,6 +85,13 @@ class MainActivity : ComponentActivity() {
                                 onEdit = {
                                     editingAuctionId = selectedAuction.id
                                 },
+                                onStatusChange = { newStatus ->
+                                    auctionViewModel.update(
+                                        selectedAuction.copy(
+                                            status = newStatus
+                                        )
+                                    )
+                                },
                                 onDelete = {
                                     auctionViewModel.delete(selectedAuction)
                                     selectedAuctionId = null
