@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
@@ -18,6 +19,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import br.com.diogozarpelao.leiloesretrogames.model.Auction
@@ -44,6 +46,8 @@ fun AuctionDetailsScreen(
     var showDeleteDialog by remember {
         mutableStateOf(false)
     }
+
+    val uriHandler = LocalUriHandler.current
 
     Column(
         modifier = modifier
@@ -91,6 +95,17 @@ fun AuctionDetailsScreen(
 
         if (auction.notes.isNotBlank()) {
             DetailItem("Observações", auction.notes)
+        }
+
+        Button(
+            onClick = {
+                runCatching {
+                    uriHandler.openUri(auction.postUrl)
+                }
+            },
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Text("Abrir publicação")
         }
 
         OutlinedButton(
@@ -204,7 +219,7 @@ fun AuctionDetailsScreenPreview() {
                 id = 1,
                 title = "Resident Evil 2",
                 platform = "PlayStation",
-                postUrl = "https://facebook.com/teste",
+                postUrl = "https://facebook.com",
                 endTimeMillis = 1_800_000_000_000,
                 notes = "Jogo original em bom estado.",
                 initialBidInCents = 500,
