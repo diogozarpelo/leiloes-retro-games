@@ -1,6 +1,8 @@
 package br.com.diogozarpelao.leiloesretrogames.ui.screens
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -9,6 +11,8 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
@@ -23,6 +27,8 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import br.com.diogozarpelao.leiloesretrogames.model.Auction
+import br.com.diogozarpelao.leiloesretrogames.model.AuctionStatus
+import br.com.diogozarpelao.leiloesretrogames.model.ItemCondition
 import br.com.diogozarpelao.leiloesretrogames.ui.theme.LeilõesRetroGamesTheme
 import java.math.BigDecimal
 import java.time.Instant
@@ -31,6 +37,7 @@ import java.time.LocalDateTime
 import java.time.LocalTime
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
+import androidx.compose.material3.OutlinedButton
 
 private val dateFormatter: DateTimeFormatter =
     DateTimeFormatter.ofPattern("dd/MM/yyyy")
@@ -103,6 +110,16 @@ fun AddAuctionScreen(
         mutableStateOf(auctionToEdit?.notes.orEmpty())
     }
 
+    var condition by rememberSaveable(stateKey) {
+        mutableStateOf(
+            auctionToEdit?.condition ?: ItemCondition.NOT_INFORMED
+        )
+    }
+
+    var conditionMenuExpanded by rememberSaveable {
+        mutableStateOf(false)
+    }
+
     val endTimeMillis = parseEndTimeMillis(endDate, endTime)
     val initialBidInCents = parseMoneyToCents(initialBid)
     val bidIncrementInCents = parseMoneyToCents(bidIncrement)
@@ -171,6 +188,51 @@ fun AddAuctionScreen(
             ),
             singleLine = true
         )
+
+        Column {
+            Text(
+                text = "Estado de conservação",
+                style = MaterialTheme.typography.bodyMedium
+            )
+
+            Box(
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                OutlinedButton(
+                    onClick = {
+                        conditionMenuExpanded = true
+                    },
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text(condition.toDisplayName())
+                }
+
+                DropdownMenu(
+                    expanded = conditionMenuExpanded,
+                    onDismissRequest = {
+                        conditionMenuExpanded = false
+                    }
+                ) {
+                    listOf(
+                        ItemCondition.EXCELLENT,
+                        ItemCondition.GOOD,
+                        ItemCondition.AVERAGE,
+                        ItemCondition.POOR,
+                        ItemCondition.VERY_POOR
+                    ).forEach { itemCondition ->
+                        DropdownMenuItem(
+                            text = {
+                                Text(itemCondition.toDisplayName())
+                            },
+                            onClick = {
+                                condition = itemCondition
+                                conditionMenuExpanded = false
+                            }
+                        )
+                    }
+                }
+            }
+        }
 
         OutlinedTextField(
             value = endDate,
@@ -251,12 +313,9 @@ fun AddAuctionScreen(
                         buyoutPriceInCents = buyoutPriceInCents,
                         finalPriceInCents =
                             auctionToEdit?.finalPriceInCents,
-                        condition = auctionToEdit?.condition
-                            ?: br.com.diogozarpelao.leiloesretrogames
-                                .model.ItemCondition.NOT_INFORMED,
+                        condition = condition,
                         status = auctionToEdit?.status
-                            ?: br.com.diogozarpelao.leiloesretrogames
-                                .model.AuctionStatus.ACTIVE,
+                            ?: AuctionStatus.ACTIVE,
                         alertsEnabled =
                             auctionToEdit?.alertsEnabled ?: true
                     )
@@ -280,6 +339,17 @@ fun AddAuctionScreen(
         ) {
             Text("Cancelar")
         }
+    }
+}
+
+private fun ItemCondition.toDisplayName(): String {
+    return when (this) {
+        ItemCondition.EXCELLENT -> "Ótimo"
+        ItemCondition.GOOD -> "Bom"
+        ItemCondition.AVERAGE -> "Médio"
+        ItemCondition.POOR -> "Ruim"
+        ItemCondition.VERY_POOR -> "Péssimo"
+        ItemCondition.NOT_INFORMED -> "Não informado"
     }
 }
 
