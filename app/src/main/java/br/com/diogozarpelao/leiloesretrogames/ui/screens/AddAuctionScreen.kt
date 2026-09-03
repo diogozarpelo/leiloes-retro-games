@@ -1,6 +1,5 @@
 package br.com.diogozarpelao.leiloesretrogames.ui.screens
 
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -10,13 +9,21 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
+import androidx.compose.material3.DatePicker
+import androidx.compose.material3.DatePickerDialog
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.TimePicker
+import androidx.compose.material3.rememberDatePickerState
+import androidx.compose.material3.rememberTimePickerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -36,8 +43,8 @@ import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.LocalTime
 import java.time.ZoneId
+import java.time.ZoneOffset
 import java.time.format.DateTimeFormatter
-import androidx.compose.material3.OutlinedButton
 
 private val dateFormatter: DateTimeFormatter =
     DateTimeFormatter.ofPattern("dd/MM/yyyy")
@@ -45,6 +52,7 @@ private val dateFormatter: DateTimeFormatter =
 private val timeFormatter: DateTimeFormatter =
     DateTimeFormatter.ofPattern("HH:mm")
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AddAuctionScreen(
     onSave: (Auction) -> Unit,
@@ -120,6 +128,42 @@ fun AddAuctionScreen(
         mutableStateOf(false)
     }
 
+    var showDatePicker by rememberSaveable {
+        mutableStateOf(false)
+    }
+
+    var showTimePicker by rememberSaveable {
+        mutableStateOf(false)
+    }
+
+    val initialDateMillis = runCatching {
+        LocalDate.parse(endDate, dateFormatter)
+            .atStartOfDay(ZoneOffset.UTC)
+            .toInstant()
+            .toEpochMilli()
+    }.getOrElse {
+        LocalDate.now()
+            .atStartOfDay(ZoneOffset.UTC)
+            .toInstant()
+            .toEpochMilli()
+    }
+
+    val datePickerState = rememberDatePickerState(
+        initialSelectedDateMillis = initialDateMillis
+    )
+
+    val initialTime = runCatching {
+        LocalTime.parse(endTime, timeFormatter)
+    }.getOrElse {
+        LocalTime.now()
+    }
+
+    val timePickerState = rememberTimePickerState(
+        initialHour = initialTime.hour,
+        initialMinute = initialTime.minute,
+        is24Hour = true
+    )
+
     val endTimeMillis = parseEndTimeMillis(endDate, endTime)
     val initialBidInCents = parseMoneyToCents(initialBid)
     val bidIncrementInCents = parseMoneyToCents(bidIncrement)
@@ -145,6 +189,79 @@ fun AddAuctionScreen(
                 initialBidInCents != null &&
                 bidIncrementInCents != null &&
                 buyoutIsValid
+
+    if (showDatePicker) {
+        DatePickerDialog(
+            onDismissRequest = {
+                showDatePicker = false
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        datePickerState.selectedDateMillis?.let { millis ->
+                            endDate = Instant.ofEpochMilli(millis)
+                                .atZone(ZoneOffset.UTC)
+                                .toLocalDate()
+                                .format(dateFormatter)
+                        }
+
+                        showDatePicker = false
+                    }
+                ) {
+                    Text("Confirmar")
+                }
+            },
+            dismissButton = {
+                TextButton(
+                    onClick = {
+                        showDatePicker = false
+                    }
+                ) {
+                    Text("Cancelar")
+                }
+            }
+        ) {
+            DatePicker(
+                state = datePickerState
+            )
+        }
+    }
+
+    if (showTimePicker) {
+        AlertDialog(
+            onDismissRequest = {
+                showTimePicker = false
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        endTime = LocalTime.of(
+                            timePickerState.hour,
+                            timePickerState.minute
+                        ).format(timeFormatter)
+
+                        showTimePicker = false
+                    }
+                ) {
+                    Text("Confirmar")
+                }
+            },
+            dismissButton = {
+                TextButton(
+                    onClick = {
+                        showTimePicker = false
+                    }
+                ) {
+                    Text("Cancelar")
+                }
+            },
+            text = {
+                TimePicker(
+                    state = timePickerState
+                )
+            }
+        )
+    }
 
     Column(
         modifier = modifier
@@ -234,23 +351,49 @@ fun AddAuctionScreen(
             }
         }
 
-        OutlinedTextField(
-            value = endDate,
-            onValueChange = { endDate = it },
-            label = { Text("Data de encerramento") },
-            placeholder = { Text("dd/MM/aaaa") },
-            modifier = Modifier.fillMaxWidth(),
-            singleLine = true
-        )
+        Column {
+            Text(
+                text = "Data de encerramento",
+                style = MaterialTheme.typography.bodyMedium
+            )
 
-        OutlinedTextField(
-            value = endTime,
-            onValueChange = { endTime = it },
-            label = { Text("Horário de encerramento") },
-            placeholder = { Text("20:30") },
-            modifier = Modifier.fillMaxWidth(),
-            singleLine = true
-        )
+            OutlinedButton(
+                onClick = {
+                    showDatePicker = true
+                },
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Text(
+                    if (endDate.isBlank()) {
+                        "Selecionar data"
+                    } else {
+                        endDate
+                    }
+                )
+            }
+        }
+
+        Column {
+            Text(
+                text = "Horário de encerramento",
+                style = MaterialTheme.typography.bodyMedium
+            )
+
+            OutlinedButton(
+                onClick = {
+                    showTimePicker = true
+                },
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Text(
+                    if (endTime.isBlank()) {
+                        "Selecionar horário"
+                    } else {
+                        endTime
+                    }
+                )
+            }
+        }
 
         OutlinedTextField(
             value = initialBid,
