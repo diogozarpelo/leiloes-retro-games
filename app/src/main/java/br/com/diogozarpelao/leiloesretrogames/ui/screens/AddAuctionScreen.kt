@@ -174,8 +174,20 @@ fun AddAuctionScreen(
         parseMoneyToCents(buyoutPrice)
     }
 
+    val postUrlIsValid =
+        postUrl.startsWith("http://") ||
+                postUrl.startsWith("https://")
+
+    val initialBidIsValid =
+        initialBidInCents != null
+
+    val bidIncrementIsValid =
+        bidIncrementInCents != null &&
+                bidIncrementInCents > 0
+
     val buyoutIsValid =
-        buyoutPrice.isBlank() || buyoutPriceInCents != null
+        buyoutPrice.isBlank() ||
+                buyoutPriceInCents != null
 
     val endTimeIsValid =
         endTimeMillis != null &&
@@ -185,9 +197,10 @@ fun AddAuctionScreen(
         title.isNotBlank() &&
                 platform.isNotBlank() &&
                 postUrl.isNotBlank() &&
+                postUrlIsValid &&
                 endTimeIsValid &&
-                initialBidInCents != null &&
-                bidIncrementInCents != null &&
+                initialBidIsValid &&
+                bidIncrementIsValid &&
                 buyoutIsValid
 
     if (showDatePicker) {
@@ -303,6 +316,12 @@ fun AddAuctionScreen(
             keyboardOptions = KeyboardOptions(
                 keyboardType = KeyboardType.Uri
             ),
+            isError = postUrl.isNotBlank() && !postUrlIsValid,
+            supportingText = {
+                if (postUrl.isNotBlank() && !postUrlIsValid) {
+                    Text("Informe um link iniciado por http:// ou https://")
+                }
+            },
             singleLine = true
         )
 
@@ -393,6 +412,18 @@ fun AddAuctionScreen(
                     }
                 )
             }
+
+            if (
+                endDate.isNotBlank() &&
+                endTime.isNotBlank() &&
+                !endTimeIsValid
+            ) {
+                Text(
+                    text = "O encerramento precisa estar no futuro.",
+                    color = MaterialTheme.colorScheme.error,
+                    style = MaterialTheme.typography.bodySmall
+                )
+            }
         }
 
         OutlinedTextField(
@@ -404,6 +435,17 @@ fun AddAuctionScreen(
             keyboardOptions = KeyboardOptions(
                 keyboardType = KeyboardType.Decimal
             ),
+            isError =
+                initialBid.isNotBlank() &&
+                        !initialBidIsValid,
+            supportingText = {
+                if (
+                    initialBid.isNotBlank() &&
+                    !initialBidIsValid
+                ) {
+                    Text("Informe um valor válido. Exemplo: 5,00")
+                }
+            },
             singleLine = true
         )
 
@@ -416,6 +458,17 @@ fun AddAuctionScreen(
             keyboardOptions = KeyboardOptions(
                 keyboardType = KeyboardType.Decimal
             ),
+            isError =
+                bidIncrement.isNotBlank() &&
+                        !bidIncrementIsValid,
+            supportingText = {
+                if (
+                    bidIncrement.isNotBlank() &&
+                    !bidIncrementIsValid
+                ) {
+                    Text("O múltiplo precisa ser maior que zero.")
+                }
+            },
             singleLine = true
         )
 
@@ -428,6 +481,17 @@ fun AddAuctionScreen(
             keyboardOptions = KeyboardOptions(
                 keyboardType = KeyboardType.Decimal
             ),
+            isError =
+                buyoutPrice.isNotBlank() &&
+                        !buyoutIsValid,
+            supportingText = {
+                if (
+                    buyoutPrice.isNotBlank() &&
+                    !buyoutIsValid
+                ) {
+                    Text("Informe um valor válido. Exemplo: 100,00")
+                }
+            },
             singleLine = true
         )
 
