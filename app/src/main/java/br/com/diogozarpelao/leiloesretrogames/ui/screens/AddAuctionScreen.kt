@@ -126,6 +126,10 @@ fun AddAuctionScreen(
         mutableStateOf(false)
     }
 
+    var platformMenuExpanded by rememberSaveable {
+        mutableStateOf(false)
+    }
+
     var showDatePicker by rememberSaveable {
         mutableStateOf(false)
     }
@@ -303,9 +307,6 @@ fun AddAuctionScreen(
                         label = {
                             Text("Hora")
                         },
-                        placeholder = {
-                            Text("18")
-                        },
                         supportingText = {
                             Text("00 a 23")
                         },
@@ -329,9 +330,6 @@ fun AddAuctionScreen(
                         label = {
                             Text("Minuto")
                         },
-                        placeholder = {
-                            Text("27")
-                        },
                         supportingText = {
                             Text("00 a 59")
                         },
@@ -347,272 +345,375 @@ fun AddAuctionScreen(
     }
 
     Column(
-        modifier = modifier
-            .fillMaxSize()
-            .verticalScroll(rememberScrollState())
-            .padding(24.dp),
-        verticalArrangement = Arrangement.spacedBy(12.dp)
+        modifier = modifier.fillMaxSize()
     ) {
-        Text(
-            text = if (auctionToEdit == null) {
-                "Cadastrar leilão"
-            } else {
-                "Editar leilão"
-            },
-            style = MaterialTheme.typography.headlineMedium
-        )
-
-        OutlinedTextField(
-            value = title,
-            onValueChange = { title = it },
-            label = { Text("Produto") },
-            modifier = Modifier.fillMaxWidth(),
-            singleLine = true
-        )
-
-        OutlinedTextField(
-            value = platform,
-            onValueChange = { platform = it },
-            label = { Text("Plataforma") },
-            modifier = Modifier.fillMaxWidth(),
-            singleLine = true
-        )
-
-        OutlinedTextField(
-            value = postUrl,
-            onValueChange = { postUrl = it },
-            label = { Text("Link da publicação") },
-            modifier = Modifier.fillMaxWidth(),
-            keyboardOptions = KeyboardOptions(
-                keyboardType = KeyboardType.Uri
-            ),
-            isError = postUrl.isNotBlank() && !postUrlIsValid,
-            supportingText = {
-                if (postUrl.isNotBlank() && !postUrlIsValid) {
-                    Text("Informe um link iniciado por http:// ou https://")
-                }
-            },
-            singleLine = true
-        )
-
-        Column {
+        Column(
+            modifier = Modifier
+                .weight(1f)
+                .verticalScroll(rememberScrollState())
+                .padding(
+                    start = 24.dp,
+                    end = 24.dp,
+                    top = 24.dp,
+                    bottom = 12.dp
+                ),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
             Text(
-                text = "Estado de conservação",
-                style = MaterialTheme.typography.bodyMedium
+                text = if (auctionToEdit == null) {
+                    "Cadastrar leilão"
+                } else {
+                    "Editar leilão"
+                },
+                style = MaterialTheme.typography.headlineMedium
             )
 
-            Box(
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                OutlinedButton(
-                    onClick = {
-                        conditionMenuExpanded = true
-                    },
+            OutlinedTextField(
+                value = title,
+                onValueChange = { title = it },
+                label = { Text("Produto") },
+                modifier = Modifier.fillMaxWidth(),
+                singleLine = true
+            )
+
+            OutlinedTextField(
+                value = postUrl,
+                onValueChange = { postUrl = it },
+                label = { Text("Link da publicação") },
+                modifier = Modifier.fillMaxWidth(),
+                keyboardOptions = KeyboardOptions(
+                    keyboardType = KeyboardType.Uri
+                ),
+                isError =
+                    postUrl.isNotBlank() &&
+                            !postUrlIsValid,
+                supportingText = {
+                    if (
+                        postUrl.isNotBlank() &&
+                        !postUrlIsValid
+                    ) {
+                        Text(
+                            "Informe um link iniciado por http:// ou https://"
+                        )
+                    }
+                },
+                singleLine = true
+            )
+
+            Column {
+                Text(
+                    text = "Plataforma",
+                    style = MaterialTheme.typography.bodyMedium
+                )
+
+                Box(
                     modifier = Modifier.fillMaxWidth()
                 ) {
-                    Text(condition.toDisplayName())
-                }
-
-                DropdownMenu(
-                    expanded = conditionMenuExpanded,
-                    onDismissRequest = {
-                        conditionMenuExpanded = false
-                    }
-                ) {
-                    listOf(
-                        ItemCondition.EXCELLENT,
-                        ItemCondition.GOOD,
-                        ItemCondition.AVERAGE,
-                        ItemCondition.POOR,
-                        ItemCondition.VERY_POOR
-                    ).forEach { itemCondition ->
-                        DropdownMenuItem(
-                            text = {
-                                Text(itemCondition.toDisplayName())
-                            },
-                            onClick = {
-                                condition = itemCondition
-                                conditionMenuExpanded = false
+                    OutlinedButton(
+                        onClick = {
+                            platformMenuExpanded = true
+                        },
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Text(
+                            if (platform.isBlank()) {
+                                "Selecionar plataforma"
+                            } else {
+                                platform
                             }
                         )
                     }
-                }
-            }
-        }
 
-        Column {
-            Text(
-                text = "Data de encerramento",
-                style = MaterialTheme.typography.bodyMedium
-            )
-
-            OutlinedButton(
-                onClick = {
-                    showDatePicker = true
-                },
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Text(
-                    if (endDate.isBlank()) {
-                        "Selecionar data"
-                    } else {
-                        endDate
+                    DropdownMenu(
+                        expanded = platformMenuExpanded,
+                        onDismissRequest = {
+                            platformMenuExpanded = false
+                        }
+                    ) {
+                        platformOptions.forEach { option ->
+                            DropdownMenuItem(
+                                text = {
+                                    Text(
+                                        "${option.badge} • ${option.name}"
+                                    )
+                                },
+                                onClick = {
+                                    platform = option.name
+                                    platformMenuExpanded = false
+                                }
+                            )
+                        }
                     }
-                )
+                }
             }
-        }
 
-        Column {
-            Text(
-                text = "Horário de encerramento",
-                style = MaterialTheme.typography.bodyMedium
-            )
-
-            OutlinedButton(
-                onClick = {
-                    showTimePicker = true
-                },
-                modifier = Modifier.fillMaxWidth()
-            ) {
+            Column {
                 Text(
-                    if (endTime.isBlank()) {
-                        "Selecionar horário"
-                    } else {
-                        endTime
+                    text = "Estado de conservação",
+                    style = MaterialTheme.typography.bodyMedium
+                )
+
+                Box(
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    OutlinedButton(
+                        onClick = {
+                            conditionMenuExpanded = true
+                        },
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Text(condition.toDisplayName())
                     }
-                )
+
+                    DropdownMenu(
+                        expanded = conditionMenuExpanded,
+                        onDismissRequest = {
+                            conditionMenuExpanded = false
+                        }
+                    ) {
+                        listOf(
+                            ItemCondition.EXCELLENT,
+                            ItemCondition.GOOD,
+                            ItemCondition.AVERAGE,
+                            ItemCondition.POOR,
+                            ItemCondition.VERY_POOR
+                        ).forEach { itemCondition ->
+                            DropdownMenuItem(
+                                text = {
+                                    Text(
+                                        itemCondition.toDisplayName()
+                                    )
+                                },
+                                onClick = {
+                                    condition = itemCondition
+                                    conditionMenuExpanded = false
+                                }
+                            )
+                        }
+                    }
+                }
             }
 
-            if (
-                endDate.isNotBlank() &&
-                endTime.isNotBlank() &&
-                !endTimeIsValid
-            ) {
+            Column {
                 Text(
-                    text = "O encerramento precisa estar no futuro.",
-                    color = MaterialTheme.colorScheme.error,
-                    style = MaterialTheme.typography.bodySmall
+                    text = "Data de encerramento",
+                    style = MaterialTheme.typography.bodyMedium
                 )
-            }
-        }
 
-        OutlinedTextField(
-            value = initialBid,
-            onValueChange = { initialBid = it },
-            label = { Text("Lance inicial") },
-            placeholder = { Text("5,00") },
-            modifier = Modifier.fillMaxWidth(),
-            keyboardOptions = KeyboardOptions(
-                keyboardType = KeyboardType.Decimal
-            ),
-            isError =
-                initialBid.isNotBlank() &&
-                        !initialBidIsValid,
-            supportingText = {
-                if (
-                    initialBid.isNotBlank() &&
-                    !initialBidIsValid
+                OutlinedButton(
+                    onClick = {
+                        showDatePicker = true
+                    },
+                    modifier = Modifier.fillMaxWidth()
                 ) {
-                    Text("Informe um valor válido. Exemplo: 5,00")
-                }
-            },
-            singleLine = true
-        )
-
-        OutlinedTextField(
-            value = bidIncrement,
-            onValueChange = { bidIncrement = it },
-            label = { Text("Múltiplo dos lances") },
-            placeholder = { Text("5,00") },
-            modifier = Modifier.fillMaxWidth(),
-            keyboardOptions = KeyboardOptions(
-                keyboardType = KeyboardType.Decimal
-            ),
-            isError =
-                bidIncrement.isNotBlank() &&
-                        !bidIncrementIsValid,
-            supportingText = {
-                if (
-                    bidIncrement.isNotBlank() &&
-                    !bidIncrementIsValid
-                ) {
-                    Text("O múltiplo precisa ser maior que zero.")
-                }
-            },
-            singleLine = true
-        )
-
-        OutlinedTextField(
-            value = buyoutPrice,
-            onValueChange = { buyoutPrice = it },
-            label = { Text("Valor de arremate — opcional") },
-            placeholder = { Text("100,00") },
-            modifier = Modifier.fillMaxWidth(),
-            keyboardOptions = KeyboardOptions(
-                keyboardType = KeyboardType.Decimal
-            ),
-            isError =
-                buyoutPrice.isNotBlank() &&
-                        !buyoutIsValid,
-            supportingText = {
-                if (
-                    buyoutPrice.isNotBlank() &&
-                    !buyoutIsValid
-                ) {
-                    Text("Informe um valor válido. Exemplo: 100,00")
-                }
-            },
-            singleLine = true
-        )
-
-        OutlinedTextField(
-            value = notes,
-            onValueChange = { notes = it },
-            label = { Text("Descrição e observações") },
-            modifier = Modifier.fillMaxWidth(),
-            minLines = 3
-        )
-
-        Button(
-            onClick = {
-                onSave(
-                    Auction(
-                        id = auctionToEdit?.id ?: 0,
-                        title = title.trim(),
-                        platform = platform.trim(),
-                        postUrl = postUrl.trim(),
-                        endTimeMillis = requireNotNull(endTimeMillis),
-                        notes = notes.trim(),
-                        initialBidInCents =
-                            requireNotNull(initialBidInCents),
-                        bidIncrementInCents =
-                            requireNotNull(bidIncrementInCents),
-                        buyoutPriceInCents = buyoutPriceInCents,
-                        finalPriceInCents =
-                            auctionToEdit?.finalPriceInCents,
-                        condition = condition,
-                        status = auctionToEdit?.status
-                            ?: AuctionStatus.ACTIVE,
-                        alertsEnabled =
-                            auctionToEdit?.alertsEnabled ?: true
+                    Text(
+                        if (endDate.isBlank()) {
+                            "Selecionar data"
+                        } else {
+                            endDate
+                        }
                     )
-                )
-            },
-            enabled = formIsValid,
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            Text(
-                if (auctionToEdit == null) {
-                    "Salvar"
-                } else {
-                    "Salvar alterações"
                 }
+            }
+
+            Column {
+                Text(
+                    text = "Horário de encerramento",
+                    style = MaterialTheme.typography.bodyMedium
+                )
+
+                OutlinedButton(
+                    onClick = {
+                        showTimePicker = true
+                    },
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text(
+                        if (endTime.isBlank()) {
+                            "Selecionar horário"
+                        } else {
+                            endTime
+                        }
+                    )
+                }
+
+                if (
+                    endDate.isNotBlank() &&
+                    endTime.isNotBlank() &&
+                    !endTimeIsValid
+                ) {
+                    Text(
+                        text =
+                            "O encerramento precisa estar no futuro.",
+                        color =
+                            MaterialTheme.colorScheme.error,
+                        style =
+                            MaterialTheme.typography.bodySmall
+                    )
+                }
+            }
+
+            OutlinedTextField(
+                value = initialBid,
+                onValueChange = {
+                    initialBid = it
+                },
+                label = {
+                    Text("Lance inicial")
+                },
+                placeholder = {
+                    Text("5,00")
+                },
+                modifier = Modifier.fillMaxWidth(),
+                keyboardOptions = KeyboardOptions(
+                    keyboardType = KeyboardType.Decimal
+                ),
+                isError =
+                    initialBid.isNotBlank() &&
+                            !initialBidIsValid,
+                supportingText = {
+                    if (
+                        initialBid.isNotBlank() &&
+                        !initialBidIsValid
+                    ) {
+                        Text(
+                            "Informe um valor válido. Exemplo: 5,00"
+                        )
+                    }
+                },
+                singleLine = true
             )
+
+            OutlinedTextField(
+                value = bidIncrement,
+                onValueChange = {
+                    bidIncrement = it
+                },
+                label = {
+                    Text("Múltiplo dos lances")
+                },
+                placeholder = {
+                    Text("5,00")
+                },
+                modifier = Modifier.fillMaxWidth(),
+                keyboardOptions = KeyboardOptions(
+                    keyboardType = KeyboardType.Decimal
+                ),
+                isError =
+                    bidIncrement.isNotBlank() &&
+                            !bidIncrementIsValid,
+                supportingText = {
+                    if (
+                        bidIncrement.isNotBlank() &&
+                        !bidIncrementIsValid
+                    ) {
+                        Text(
+                            "O múltiplo precisa ser maior que zero."
+                        )
+                    }
+                },
+                singleLine = true
+            )
+
+            OutlinedTextField(
+                value = buyoutPrice,
+                onValueChange = {
+                    buyoutPrice = it
+                },
+                label = {
+                    Text("Valor de arremate — opcional")
+                },
+                placeholder = {
+                    Text("100,00")
+                },
+                modifier = Modifier.fillMaxWidth(),
+                keyboardOptions = KeyboardOptions(
+                    keyboardType = KeyboardType.Decimal
+                ),
+                isError =
+                    buyoutPrice.isNotBlank() &&
+                            !buyoutIsValid,
+                supportingText = {
+                    if (
+                        buyoutPrice.isNotBlank() &&
+                        !buyoutIsValid
+                    ) {
+                        Text(
+                            "Informe um valor válido. Exemplo: 100,00"
+                        )
+                    }
+                },
+                singleLine = true
+            )
+
+            OutlinedTextField(
+                value = notes,
+                onValueChange = {
+                    notes = it
+                },
+                label = {
+                    Text("Descrição e observações")
+                },
+                modifier = Modifier.fillMaxWidth(),
+                minLines = 3
+            )
+
+            Button(
+                onClick = {
+                    onSave(
+                        Auction(
+                            id = auctionToEdit?.id ?: 0,
+                            title = title.trim(),
+                            platform = platform.trim(),
+                            postUrl = postUrl.trim(),
+                            endTimeMillis =
+                                requireNotNull(endTimeMillis),
+                            notes = notes.trim(),
+                            initialBidInCents =
+                                requireNotNull(
+                                    initialBidInCents
+                                ),
+                            bidIncrementInCents =
+                                requireNotNull(
+                                    bidIncrementInCents
+                                ),
+                            buyoutPriceInCents =
+                                buyoutPriceInCents,
+                            finalPriceInCents =
+                                auctionToEdit
+                                    ?.finalPriceInCents,
+                            condition = condition,
+                            status =
+                                auctionToEdit?.status
+                                    ?: AuctionStatus.ACTIVE,
+                            alertsEnabled =
+                                auctionToEdit
+                                    ?.alertsEnabled
+                                    ?: true
+                        )
+                    )
+                },
+                enabled = formIsValid,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Text(
+                    if (auctionToEdit == null) {
+                        "Salvar"
+                    } else {
+                        "Salvar alterações"
+                    }
+                )
+            }
         }
 
         TextButton(
             onClick = onCancel,
-            modifier = Modifier.fillMaxWidth()
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(
+                    horizontal = 24.dp,
+                    vertical = 8.dp
+                )
         ) {
             Text("Cancelar")
         }
@@ -635,23 +736,33 @@ private fun parseEndTimeMillis(
     time: String
 ): Long? {
     return runCatching {
-        val localDate = LocalDate.parse(date.trim(), dateFormatter)
-        val localTime = LocalTime.parse(time.trim(), timeFormatter)
+        val localDate =
+            LocalDate.parse(date.trim(), dateFormatter)
 
-        LocalDateTime.of(localDate, localTime)
+        val localTime =
+            LocalTime.parse(time.trim(), timeFormatter)
+
+        LocalDateTime.of(
+            localDate,
+            localTime
+        )
             .atZone(ZoneId.systemDefault())
             .toInstant()
             .toEpochMilli()
     }.getOrNull()
 }
 
-private fun parseMoneyToCents(value: String): Long? {
-    val normalizedValue = value
-        .trim()
-        .replace(",", ".")
+private fun parseMoneyToCents(
+    value: String
+): Long? {
+    val normalizedValue =
+        value
+            .trim()
+            .replace(",", ".")
 
-    val decimalValue = normalizedValue.toBigDecimalOrNull()
-        ?: return null
+    val decimalValue =
+        normalizedValue.toBigDecimalOrNull()
+            ?: return null
 
     if (
         decimalValue < BigDecimal.ZERO ||
@@ -667,22 +778,31 @@ private fun parseMoneyToCents(value: String): Long? {
     }.getOrNull()
 }
 
-private fun formatDateForForm(value: Long): String {
-    return Instant.ofEpochMilli(value)
+private fun formatDateForForm(
+    value: Long
+): String {
+    return Instant
+        .ofEpochMilli(value)
         .atZone(ZoneId.systemDefault())
         .toLocalDate()
         .format(dateFormatter)
 }
 
-private fun formatTimeForForm(value: Long): String {
-    return Instant.ofEpochMilli(value)
+private fun formatTimeForForm(
+    value: Long
+): String {
+    return Instant
+        .ofEpochMilli(value)
         .atZone(ZoneId.systemDefault())
         .toLocalTime()
         .format(timeFormatter)
 }
 
-private fun formatMoneyForForm(valueInCents: Long): String {
-    return BigDecimal.valueOf(valueInCents, 2)
+private fun formatMoneyForForm(
+    valueInCents: Long
+): String {
+    return BigDecimal
+        .valueOf(valueInCents, 2)
         .stripTrailingZeros()
         .toPlainString()
         .replace(".", ",")
