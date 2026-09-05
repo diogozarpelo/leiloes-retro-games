@@ -19,9 +19,13 @@ class AuctionViewModel(
         initialValue = emptyList()
     )
 
-    fun insert(auction: Auction) {
+    fun insert(
+        auction: Auction,
+        onInserted: (Long) -> Unit = {}
+    ) {
         viewModelScope.launch {
-            repository.insert(auction)
+            val id = repository.insert(auction)
+            onInserted(id)
         }
     }
 

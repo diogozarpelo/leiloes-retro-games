@@ -1,12 +1,17 @@
 package br.com.diogozarpelao.leiloesretrogames
 
+import android.Manifest
+import android.os.Build
 import android.os.Bundle
 import androidx.activity.ComponentActivity
+import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Scaffold
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -28,12 +33,29 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
 
+        val notificationScheduler =
+            AuctionNotificationScheduler(this)
+
         setContent {
             val auctionViewModel: AuctionViewModel = viewModel(
                 factory = AuctionViewModelFactory(
                     (application as AuctionApplication).repository
                 )
             )
+
+            val notificationPermissionLauncher =
+                rememberLauncherForActivityResult(
+                    contract =
+                        ActivityResultContracts.RequestPermission()
+                ) {}
+
+            LaunchedEffect(Unit) {
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                    notificationPermissionLauncher.launch(
+                        Manifest.permission.POST_NOTIFICATIONS
+                    )
+                }
+            }
 
             val auctions by auctionViewModel.auctions.collectAsState()
 
@@ -67,6 +89,15 @@ class MainActivity : ComponentActivity() {
                                 auctionToEdit = auctionBeingEdited,
                                 onSave = { updatedAuction ->
                                     auctionViewModel.update(updatedAuction)
+
+                                    notificationScheduler.cancel(
+                                        updatedAuction.id
+                                    )
+
+                                    notificationScheduler.schedule(
+                                        updatedAuction
+                                    )
+
                                     editingAuctionId = null
                                     selectedAuctionId = updatedAuction.id
                                 },
@@ -108,17 +139,26 @@ class MainActivity : ComponentActivity() {
                                         selectedAuction.copy(
                                             finalPriceInCents = finalPrice,
                                             status = if (
-                                                selectedAuction.status == AuctionStatus.WON_PAID
+                                                selectedAuction.status ==
+                                                AuctionStatus.WON_PAID
                                             ) {
                                                 AuctionStatus.WON_PAID
                                             } else {
-                                                AuctionStatus.WON_PENDING_PAYMENT
+                                                AuctionStatus
+                                                    .WON_PENDING_PAYMENT
                                             }
                                         )
                                     )
                                 },
                                 onDelete = {
-                                    auctionViewModel.delete(selectedAuction)
+                                    notificationScheduler.cancel(
+                                        selectedAuction.id
+                                    )
+
+                                    auctionViewModel.delete(
+                                        selectedAuction
+                                    )
+
                                     selectedAuctionId = null
                                 },
                                 modifier = Modifier.padding(innerPadding)
@@ -128,7 +168,16 @@ class MainActivity : ComponentActivity() {
                         showAddAuctionScreen -> {
                             AddAuctionScreen(
                                 onSave = { auction ->
-                                    auctionViewModel.insert(auction)
+                                    auctionViewModel.insert(
+                                        auction
+                                    ) { generatedId ->
+                                        notificationScheduler.schedule(
+                                            auction.copy(
+                                                id = generatedId
+                                            )
+                                        )
+                                    }
+
                                     showAddAuctionScreen = false
                                 },
                                 onCancel = {

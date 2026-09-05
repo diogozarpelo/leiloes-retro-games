@@ -21,9 +21,7 @@ import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.material3.TimePicker
 import androidx.compose.material3.rememberDatePickerState
-import androidx.compose.material3.rememberTimePickerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -158,11 +156,26 @@ fun AddAuctionScreen(
         LocalTime.now()
     }
 
-    val timePickerState = rememberTimePickerState(
-        initialHour = initialTime.hour,
-        initialMinute = initialTime.minute,
-        is24Hour = true
-    )
+    var selectedHour by rememberSaveable(stateKey) {
+        mutableStateOf(
+            initialTime.hour.toString().padStart(2, '0')
+        )
+    }
+
+    var selectedMinute by rememberSaveable(stateKey) {
+        mutableStateOf(
+            initialTime.minute.toString().padStart(2, '0')
+        )
+    }
+
+    val selectedHourNumber = selectedHour.toIntOrNull()
+    val selectedMinuteNumber = selectedMinute.toIntOrNull()
+
+    val timeInputIsValid =
+        selectedHourNumber != null &&
+                selectedHourNumber in 0..23 &&
+                selectedMinuteNumber != null &&
+                selectedMinuteNumber in 0..59
 
     val endTimeMillis = parseEndTimeMillis(endDate, endTime)
     val initialBidInCents = parseMoneyToCents(initialBid)
@@ -245,16 +258,20 @@ fun AddAuctionScreen(
             onDismissRequest = {
                 showTimePicker = false
             },
+            title = {
+                Text("Selecionar horário")
+            },
             confirmButton = {
                 TextButton(
                     onClick = {
-                        endTime = LocalTime.of(
-                            timePickerState.hour,
-                            timePickerState.minute
-                        ).format(timeFormatter)
+                        endTime = "%02d:%02d".format(
+                            requireNotNull(selectedHourNumber),
+                            requireNotNull(selectedMinuteNumber)
+                        )
 
                         showTimePicker = false
-                    }
+                    },
+                    enabled = timeInputIsValid
                 ) {
                     Text("Confirmar")
                 }
@@ -269,9 +286,62 @@ fun AddAuctionScreen(
                 }
             },
             text = {
-                TimePicker(
-                    state = timePickerState
-                )
+                Column(
+                    verticalArrangement =
+                        Arrangement.spacedBy(12.dp)
+                ) {
+                    OutlinedTextField(
+                        value = selectedHour,
+                        onValueChange = { value ->
+                            if (
+                                value.length <= 2 &&
+                                value.all { it.isDigit() }
+                            ) {
+                                selectedHour = value
+                            }
+                        },
+                        label = {
+                            Text("Hora")
+                        },
+                        placeholder = {
+                            Text("18")
+                        },
+                        supportingText = {
+                            Text("00 a 23")
+                        },
+                        keyboardOptions = KeyboardOptions(
+                            keyboardType = KeyboardType.Number
+                        ),
+                        singleLine = true,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+
+                    OutlinedTextField(
+                        value = selectedMinute,
+                        onValueChange = { value ->
+                            if (
+                                value.length <= 2 &&
+                                value.all { it.isDigit() }
+                            ) {
+                                selectedMinute = value
+                            }
+                        },
+                        label = {
+                            Text("Minuto")
+                        },
+                        placeholder = {
+                            Text("27")
+                        },
+                        supportingText = {
+                            Text("00 a 59")
+                        },
+                        keyboardOptions = KeyboardOptions(
+                            keyboardType = KeyboardType.Number
+                        ),
+                        singleLine = true,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                }
             }
         )
     }
