@@ -38,6 +38,10 @@ fun AuctionResultActions(
         )
     }
 
+    var finalPriceSaved by rememberSaveable {
+        mutableStateOf(finalPriceInCents != null)
+    }
+
     val parsedFinalPrice =
         parseFinalPriceToCents(finalPriceText)
 
@@ -85,6 +89,7 @@ fun AuctionResultActions(
                 value = finalPriceText,
                 onValueChange = {
                     finalPriceText = it
+                    finalPriceSaved = false
                 },
                 label = {
                     Text("Valor final")
@@ -104,11 +109,29 @@ fun AuctionResultActions(
                     onFinalPriceChange(
                         requireNotNull(parsedFinalPrice)
                     )
+
+                    finalPriceSaved = true
                 },
-                enabled = parsedFinalPrice != null,
+                enabled =
+                    parsedFinalPrice != null &&
+                            !finalPriceSaved,
                 modifier = Modifier.fillMaxWidth()
             ) {
-                Text("Salvar valor final")
+                Text(
+                    if (finalPriceSaved) {
+                        "Valor salvo"
+                    } else {
+                        "Salvar valor final"
+                    }
+                )
+            }
+
+            if (finalPriceSaved) {
+                Text(
+                    text = "Valor final salvo.",
+                    color = MaterialTheme.colorScheme.primary,
+                    style = MaterialTheme.typography.bodyMedium
+                )
             }
         }
 

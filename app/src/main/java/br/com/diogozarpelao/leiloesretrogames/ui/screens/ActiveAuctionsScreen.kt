@@ -23,12 +23,20 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import br.com.diogozarpelao.leiloesretrogames.model.Auction
+import br.com.diogozarpelao.leiloesretrogames.model.AuctionStatus
 import br.com.diogozarpelao.leiloesretrogames.ui.theme.LeilõesRetroGamesTheme
 import kotlinx.coroutines.delay
 
 private enum class AuctionSection {
     ACTIVE,
     ENDED
+}
+
+private enum class EndedAuctionFilter {
+    ALL,
+    NOT_WON,
+    PENDING_PAYMENT,
+    PAID
 }
 
 @Composable
@@ -40,6 +48,10 @@ fun ActiveAuctionsScreen(
 ) {
     var selectedSection by rememberSaveable {
         mutableStateOf(AuctionSection.ACTIVE)
+    }
+
+    var endedFilter by rememberSaveable {
+        mutableStateOf(EndedAuctionFilter.ALL)
     }
 
     val currentTime by produceState(
@@ -58,7 +70,24 @@ fun ActiveAuctionsScreen(
             }
 
             AuctionSection.ENDED -> {
-                auction.endTimeMillis <= currentTime
+                val isEnded =
+                    auction.endTimeMillis <= currentTime
+
+                val matchesFilter = when (endedFilter) {
+                    EndedAuctionFilter.ALL -> true
+
+                    EndedAuctionFilter.NOT_WON ->
+                        auction.status == AuctionStatus.NOT_WON
+
+                    EndedAuctionFilter.PENDING_PAYMENT ->
+                        auction.status ==
+                                AuctionStatus.WON_PENDING_PAYMENT
+
+                    EndedAuctionFilter.PAID ->
+                        auction.status == AuctionStatus.WON_PAID
+                }
+
+                isEnded && matchesFilter
             }
         }
     }
@@ -100,14 +129,77 @@ fun ActiveAuctionsScreen(
             )
         }
 
+        if (selectedSection == AuctionSection.ENDED) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(6.dp)
+            ) {
+                FilterChip(
+                    selected =
+                        endedFilter == EndedAuctionFilter.ALL,
+                    onClick = {
+                        endedFilter = EndedAuctionFilter.ALL
+                    },
+                    label = {
+                        Text("Todos")
+                    }
+                )
+
+                FilterChip(
+                    selected =
+                        endedFilter == EndedAuctionFilter.NOT_WON,
+                    onClick = {
+                        endedFilter = EndedAuctionFilter.NOT_WON
+                    },
+                    label = {
+                        Text("Não ganho")
+                    }
+                )
+
+                FilterChip(
+                    selected =
+                        endedFilter ==
+                                EndedAuctionFilter.PENDING_PAYMENT,
+                    onClick = {
+                        endedFilter =
+                            EndedAuctionFilter.PENDING_PAYMENT
+                    },
+                    label = {
+                        Text("A pagar")
+                    }
+                )
+
+                FilterChip(
+                    selected =
+                        endedFilter == EndedAuctionFilter.PAID,
+                    onClick = {
+                        endedFilter = EndedAuctionFilter.PAID
+                    },
+                    label = {
+                        Text("Pago")
+                    }
+                )
+            }
+        }
+
         if (displayedAuctions.isEmpty()) {
             Text(
-                text = if (
-                    selectedSection == AuctionSection.ACTIVE
-                ) {
-                    "Nenhum leilão ativo."
-                } else {
-                    "Nenhum leilão encerrado."
+                text = when {
+                    selectedSection == AuctionSection.ACTIVE ->
+                        "Nenhum leilão ativo."
+
+                    endedFilter == EndedAuctionFilter.NOT_WON ->
+                        "Nenhum leilão não ganho."
+
+                    endedFilter ==
+                            EndedAuctionFilter.PENDING_PAYMENT ->
+                        "Nenhum leilão a pagar."
+
+                    endedFilter == EndedAuctionFilter.PAID ->
+                        "Nenhum leilão pago."
+
+                    else ->
+                        "Nenhum leilão encerrado."
                 },
                 style = MaterialTheme.typography.bodyLarge
             )

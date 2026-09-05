@@ -106,7 +106,14 @@ class MainActivity : ComponentActivity() {
                                 onFinalPriceChange = { finalPrice ->
                                     auctionViewModel.update(
                                         selectedAuction.copy(
-                                            finalPriceInCents = finalPrice
+                                            finalPriceInCents = finalPrice,
+                                            status = if (
+                                                selectedAuction.status == AuctionStatus.WON_PAID
+                                            ) {
+                                                AuctionStatus.WON_PAID
+                                            } else {
+                                                AuctionStatus.WON_PENDING_PAYMENT
+                                            }
                                         )
                                     )
                                 },
