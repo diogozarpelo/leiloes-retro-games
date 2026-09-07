@@ -17,6 +17,7 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -26,6 +27,7 @@ import androidx.compose.runtime.produceState
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -47,7 +49,12 @@ private enum class AuctionSection {
 
 private enum class EndedAuctionFilter {
     ALL,
-    NOT_WON,
+    WON,
+    NOT_WON
+}
+
+private enum class WonAuctionFilter {
+    ALL,
     PENDING_PAYMENT,
     PAID
 }
@@ -68,6 +75,10 @@ fun ActiveAuctionsScreen(
 
     var endedFilter by rememberSaveable {
         mutableStateOf(EndedAuctionFilter.ALL)
+    }
+
+    var wonFilter by rememberSaveable {
+        mutableStateOf(WonAuctionFilter.ALL)
     }
 
     val currentTime by produceState(
@@ -97,21 +108,41 @@ fun ActiveAuctionsScreen(
                 val isEnded =
                     auction.endTimeMillis <= currentTime
 
-                val matchesFilter = when (endedFilter) {
-                    EndedAuctionFilter.ALL -> true
+                val matchesEndedFilter =
+                    when (endedFilter) {
+                        EndedAuctionFilter.ALL ->
+                            true
 
-                    EndedAuctionFilter.NOT_WON ->
-                        auction.status == AuctionStatus.NOT_WON
+                        EndedAuctionFilter.NOT_WON ->
+                            auction.status ==
+                                    AuctionStatus.NOT_WON
 
-                    EndedAuctionFilter.PENDING_PAYMENT ->
-                        auction.status ==
-                                AuctionStatus.WON_PENDING_PAYMENT
+                        EndedAuctionFilter.WON -> {
+                            val isWon =
+                                auction.status ==
+                                        AuctionStatus.WON_PENDING_PAYMENT ||
+                                        auction.status ==
+                                        AuctionStatus.WON_PAID
 
-                    EndedAuctionFilter.PAID ->
-                        auction.status == AuctionStatus.WON_PAID
-                }
+                            val matchesWonFilter =
+                                when (wonFilter) {
+                                    WonAuctionFilter.ALL ->
+                                        true
 
-                isEnded && matchesFilter
+                                    WonAuctionFilter.PENDING_PAYMENT ->
+                                        auction.status ==
+                                                AuctionStatus.WON_PENDING_PAYMENT
+
+                                    WonAuctionFilter.PAID ->
+                                        auction.status ==
+                                                AuctionStatus.WON_PAID
+                                }
+
+                            isWon && matchesWonFilter
+                        }
+                    }
+
+                isEnded && matchesEndedFilter
             }
         }
     }
@@ -119,7 +150,10 @@ fun ActiveAuctionsScreen(
     Column(
         modifier = modifier
             .fillMaxSize()
-            .padding(horizontal = 20.dp, vertical = 16.dp),
+            .padding(
+                horizontal = 20.dp,
+                vertical = 16.dp
+            ),
         verticalArrangement = Arrangement.spacedBy(14.dp)
     ) {
         Column(
@@ -145,46 +179,30 @@ fun ActiveAuctionsScreen(
             SummaryCard(
                 title = "Ativos",
                 value = activeCount.toString(),
+                selected =
+                    selectedSection == AuctionSection.ACTIVE,
+                onClick = {
+                    selectedSection = AuctionSection.ACTIVE
+                },
                 modifier = Modifier.weight(1f)
             )
 
             SummaryCard(
                 title = "Encerrados",
                 value = endedCount.toString(),
-                modifier = Modifier.weight(1f)
-            )
-        }
-
-        Row(
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
-            FilterChip(
-                selected =
-                    selectedSection == AuctionSection.ACTIVE,
-                onClick = {
-                    selectedSection = AuctionSection.ACTIVE
-                },
-                label = {
-                    Text("Ativos")
-                }
-            )
-
-            FilterChip(
                 selected =
                     selectedSection == AuctionSection.ENDED,
                 onClick = {
                     selectedSection = AuctionSection.ENDED
                 },
-                label = {
-                    Text("Encerrados")
-                }
+                modifier = Modifier.weight(1f)
             )
         }
 
         if (selectedSection == AuctionSection.ENDED) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(6.dp)
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 FilterChip(
                     selected =
@@ -192,8 +210,21 @@ fun ActiveAuctionsScreen(
                     onClick = {
                         endedFilter = EndedAuctionFilter.ALL
                     },
+                    modifier = Modifier.weight(1f),
                     label = {
                         Text("Todos")
+                    }
+                )
+
+                FilterChip(
+                    selected =
+                        endedFilter == EndedAuctionFilter.WON,
+                    onClick = {
+                        endedFilter = EndedAuctionFilter.WON
+                    },
+                    modifier = Modifier.weight(1f),
+                    label = {
+                        Text("Ganhos")
                     }
                 )
 
@@ -203,19 +234,43 @@ fun ActiveAuctionsScreen(
                     onClick = {
                         endedFilter = EndedAuctionFilter.NOT_WON
                     },
+                    modifier = Modifier.weight(1f),
                     label = {
-                        Text("Não ganho")
+                        Text("Não ganhos")
+                    }
+                )
+            }
+        }
+
+        if (
+            selectedSection == AuctionSection.ENDED &&
+            endedFilter == EndedAuctionFilter.WON
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                FilterChip(
+                    selected =
+                        wonFilter == WonAuctionFilter.ALL,
+                    onClick = {
+                        wonFilter = WonAuctionFilter.ALL
+                    },
+                    modifier = Modifier.weight(1f),
+                    label = {
+                        Text("Todos")
                     }
                 )
 
                 FilterChip(
                     selected =
-                        endedFilter ==
-                                EndedAuctionFilter.PENDING_PAYMENT,
+                        wonFilter ==
+                                WonAuctionFilter.PENDING_PAYMENT,
                     onClick = {
-                        endedFilter =
-                            EndedAuctionFilter.PENDING_PAYMENT
+                        wonFilter =
+                            WonAuctionFilter.PENDING_PAYMENT
                     },
+                    modifier = Modifier.weight(1f),
                     label = {
                         Text("A pagar")
                     }
@@ -223,23 +278,27 @@ fun ActiveAuctionsScreen(
 
                 FilterChip(
                     selected =
-                        endedFilter == EndedAuctionFilter.PAID,
+                        wonFilter == WonAuctionFilter.PAID,
                     onClick = {
-                        endedFilter = EndedAuctionFilter.PAID
+                        wonFilter = WonAuctionFilter.PAID
                     },
+                    modifier = Modifier.weight(1f),
                     label = {
-                        Text("Pago")
+                        Text("Pagos")
                     }
                 )
             }
         }
 
         Text(
-            text = if (selectedSection == AuctionSection.ACTIVE) {
-                "Leilões ativos"
-            } else {
-                "Leilões encerrados"
-            },
+            text =
+                if (
+                    selectedSection == AuctionSection.ACTIVE
+                ) {
+                    "Leilões ativos"
+                } else {
+                    "Leilões encerrados"
+                },
             style = MaterialTheme.typography.titleMedium,
             fontWeight = FontWeight.SemiBold
         )
@@ -247,18 +306,29 @@ fun ActiveAuctionsScreen(
         if (displayedAuctions.isEmpty()) {
             EmptyAuctionsMessage(
                 text = when {
-                    selectedSection == AuctionSection.ACTIVE ->
+                    selectedSection ==
+                            AuctionSection.ACTIVE ->
                         "Nenhum leilão ativo no momento."
 
-                    endedFilter == EndedAuctionFilter.NOT_WON ->
+                    endedFilter ==
+                            EndedAuctionFilter.NOT_WON ->
                         "Nenhum leilão não ganho."
 
                     endedFilter ==
-                            EndedAuctionFilter.PENDING_PAYMENT ->
+                            EndedAuctionFilter.WON &&
+                            wonFilter ==
+                            WonAuctionFilter.PENDING_PAYMENT ->
                         "Nenhum leilão aguardando pagamento."
 
-                    endedFilter == EndedAuctionFilter.PAID ->
+                    endedFilter ==
+                            EndedAuctionFilter.WON &&
+                            wonFilter ==
+                            WonAuctionFilter.PAID ->
                         "Nenhum leilão pago."
+
+                    endedFilter ==
+                            EndedAuctionFilter.WON ->
+                        "Nenhum leilão ganho."
 
                     else ->
                         "Nenhum leilão encerrado."
@@ -267,11 +337,14 @@ fun ActiveAuctionsScreen(
         } else {
             LazyColumn(
                 modifier = Modifier.weight(1f),
-                verticalArrangement = Arrangement.spacedBy(10.dp)
+                verticalArrangement =
+                    Arrangement.spacedBy(10.dp)
             ) {
                 items(
                     items = displayedAuctions,
-                    key = { auction -> auction.id }
+                    key = { auction ->
+                        auction.id
+                    }
                 ) { auction ->
                     AuctionCard(
                         auction = auction,
@@ -294,10 +367,40 @@ fun ActiveAuctionsScreen(
             onClick = onAddAuction,
             modifier = Modifier.fillMaxWidth(),
             shape = RoundedCornerShape(14.dp),
-            contentPadding = ButtonDefaults.ContentPadding
+            contentPadding =
+                ButtonDefaults.ContentPadding
         ) {
             Text(
                 text = "Cadastrar novo leilão",
+                fontWeight = FontWeight.SemiBold
+            )
+        }
+
+        OutlinedButton(
+            onClick = {
+                selectedSection =
+                    if (
+                        selectedSection ==
+                        AuctionSection.ACTIVE
+                    ) {
+                        AuctionSection.ENDED
+                    } else {
+                        AuctionSection.ACTIVE
+                    }
+            },
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(14.dp)
+        ) {
+            Text(
+                text =
+                    if (
+                        selectedSection ==
+                        AuctionSection.ACTIVE
+                    ) {
+                        "Ir para encerrados"
+                    } else {
+                        "Voltar para ativos"
+                    },
                 fontWeight = FontWeight.SemiBold
             )
         }
@@ -308,27 +411,49 @@ fun ActiveAuctionsScreen(
 private fun SummaryCard(
     title: String,
     value: String,
+    selected: Boolean,
+    onClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    Surface(
+    Card(
+        onClick = onClick,
         modifier = modifier,
         shape = RoundedCornerShape(16.dp),
-        tonalElevation = 2.dp
+        colors = CardDefaults.cardColors(
+            containerColor =
+                if (selected) {
+                    MaterialTheme.colorScheme.primaryContainer
+                } else {
+                    MaterialTheme.colorScheme.surface
+                }
+        ),
+        elevation = CardDefaults.cardElevation(
+            defaultElevation =
+                if (selected) {
+                    4.dp
+                } else {
+                    2.dp
+                }
+        )
     ) {
         Column(
             modifier = Modifier.padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(2.dp)
+            verticalArrangement =
+                Arrangement.spacedBy(2.dp)
         ) {
             Text(
                 text = value,
-                style = MaterialTheme.typography.headlineSmall,
+                style =
+                    MaterialTheme.typography.headlineSmall,
                 fontWeight = FontWeight.Bold
             )
 
             Text(
                 text = title,
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
+                style =
+                    MaterialTheme.typography.bodyMedium,
+                color =
+                    MaterialTheme.colorScheme.onSurfaceVariant
             )
         }
     }
@@ -348,18 +473,22 @@ private fun EmptyAuctionsMessage(
     ) {
         Column(
             modifier = Modifier.padding(24.dp),
-            verticalArrangement = Arrangement.spacedBy(6.dp)
+            verticalArrangement =
+                Arrangement.spacedBy(6.dp)
         ) {
             Text(
                 text = "Nada por aqui",
-                style = MaterialTheme.typography.titleMedium,
+                style =
+                    MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.SemiBold
             )
 
             Text(
                 text = text,
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
+                style =
+                    MaterialTheme.typography.bodyMedium,
+                color =
+                    MaterialTheme.colorScheme.onSurfaceVariant
             )
         }
     }
@@ -371,10 +500,13 @@ private fun AuctionCard(
     currentTime: Long,
     onClick: () -> Unit
 ) {
-    val remainingTime = calculateRemainingTime(
-        endTimeMillis = auction.endTimeMillis,
-        currentTimeMillis = currentTime
-    )
+    val remainingTime =
+        calculateRemainingTime(
+            endTimeMillis =
+                auction.endTimeMillis,
+            currentTimeMillis =
+                currentTime
+        )
 
     Card(
         onClick = onClick,
@@ -386,30 +518,43 @@ private fun AuctionCard(
     ) {
         Column(
             modifier = Modifier.padding(18.dp),
-            verticalArrangement = Arrangement.spacedBy(10.dp)
+            verticalArrangement =
+                Arrangement.spacedBy(10.dp)
         ) {
             Column(
-                verticalArrangement = Arrangement.spacedBy(8.dp)
+                verticalArrangement =
+                    Arrangement.spacedBy(8.dp)
             ) {
                 Text(
                     text = auction.title,
-                    style = MaterialTheme.typography.titleLarge,
+                    style =
+                        MaterialTheme.typography.titleLarge,
                     fontWeight = FontWeight.Bold
                 )
 
                 Surface(
                     shape = RoundedCornerShape(8.dp),
-                    color = platformBackgroundColor(auction.platform)
+                    color =
+                        platformBackgroundColor(
+                            auction.platform
+                        )
                 ) {
                     Text(
-                        text = platformBadge(auction.platform),
+                        text =
+                            platformBadge(
+                                auction.platform
+                            ),
                         modifier = Modifier.padding(
                             horizontal = 10.dp,
                             vertical = 5.dp
                         ),
-                        style = MaterialTheme.typography.labelMedium,
+                        style =
+                            MaterialTheme.typography.labelMedium,
                         fontWeight = FontWeight.Bold,
-                        color = platformTextColor(auction.platform)
+                        color =
+                            platformTextColor(
+                                auction.platform
+                            )
                     )
                 }
             }
@@ -420,32 +565,43 @@ private fun AuctionCard(
             )
 
             Column(
-                verticalArrangement = Arrangement.spacedBy(5.dp)
+                verticalArrangement =
+                    Arrangement.spacedBy(5.dp)
             ) {
                 InfoLine(
                     label = "Encerramento",
-                    value = formatAuctionDate(
-                        auction.endTimeMillis
-                    )
+                    value =
+                        formatAuctionDate(
+                            auction.endTimeMillis
+                        )
                 )
 
                 InfoLine(
                     label = "Lance inicial",
-                    value = formatMoney(
-                        auction.initialBidInCents
-                    )
+                    value =
+                        formatMoney(
+                            auction.initialBidInCents
+                        )
                 )
 
-                if (auction.endTimeMillis > currentTime) {
+                if (
+                    auction.endTimeMillis >
+                    currentTime
+                ) {
                     InfoLine(
                         label = "Tempo restante",
                         value = remainingTime
                     )
                 } else {
-                    auction.finalPriceInCents?.let { finalPrice ->
+                    auction.finalPriceInCents?.let {
+                            finalPrice ->
+
                         InfoLine(
                             label = "Valor final",
-                            value = formatMoney(finalPrice)
+                            value =
+                                formatMoney(
+                                    finalPrice
+                                )
                         )
                     }
                 }
@@ -459,26 +615,72 @@ private fun StatusBadge(
     auction: Auction,
     currentTime: Long
 ) {
-    val text = when {
-        auction.endTimeMillis > currentTime ->
-            "Em andamento"
+    val text =
+        when {
+            auction.endTimeMillis > currentTime ->
+                "Em andamento"
 
-        auction.status == AuctionStatus.NOT_WON ->
-            "Não ganho"
+            auction.status ==
+                    AuctionStatus.NOT_WON ->
+                "Não ganho"
 
-        auction.status == AuctionStatus.WON_PENDING_PAYMENT ->
-            "A pagar"
+            auction.status ==
+                    AuctionStatus.WON_PENDING_PAYMENT ->
+                "A pagar"
 
-        auction.status == AuctionStatus.WON_PAID ->
-            "Pago"
+            auction.status ==
+                    AuctionStatus.WON_PAID ->
+                "Pago"
 
-        else ->
-            "Encerrado"
-    }
+            else ->
+                "Encerrado"
+        }
+
+    val backgroundColor =
+        when {
+            auction.endTimeMillis > currentTime ->
+                MaterialTheme.colorScheme.primaryContainer
+
+            auction.status ==
+                    AuctionStatus.NOT_WON ->
+                MaterialTheme.colorScheme.errorContainer
+
+            auction.status ==
+                    AuctionStatus.WON_PENDING_PAYMENT ->
+                Color(0xFF78350F)
+
+            auction.status ==
+                    AuctionStatus.WON_PAID ->
+                Color(0xFF14532D)
+
+            else ->
+                MaterialTheme.colorScheme.secondaryContainer
+        }
+
+    val textColor =
+        when {
+            auction.endTimeMillis > currentTime ->
+                MaterialTheme.colorScheme.onPrimaryContainer
+
+            auction.status ==
+                    AuctionStatus.NOT_WON ->
+                MaterialTheme.colorScheme.onErrorContainer
+
+            auction.status ==
+                    AuctionStatus.WON_PENDING_PAYMENT ->
+                Color(0xFFFDE68A)
+
+            auction.status ==
+                    AuctionStatus.WON_PAID ->
+                Color(0xFFBBF7D0)
+
+            else ->
+                MaterialTheme.colorScheme.onSecondaryContainer
+        }
 
     Surface(
         shape = RoundedCornerShape(50),
-        color = MaterialTheme.colorScheme.secondaryContainer
+        color = backgroundColor
     ) {
         Text(
             text = text,
@@ -486,8 +688,10 @@ private fun StatusBadge(
                 horizontal = 12.dp,
                 vertical = 6.dp
             ),
-            style = MaterialTheme.typography.labelLarge,
-            color = MaterialTheme.colorScheme.onSecondaryContainer
+            style =
+                MaterialTheme.typography.labelLarge,
+            fontWeight = FontWeight.SemiBold,
+            color = textColor
         )
     }
 }
@@ -499,17 +703,21 @@ private fun InfoLine(
 ) {
     Row(
         modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.SpaceBetween
+        horizontalArrangement =
+            Arrangement.SpaceBetween
     ) {
         Text(
             text = label,
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
+            style =
+                MaterialTheme.typography.bodyMedium,
+            color =
+                MaterialTheme.colorScheme.onSurfaceVariant
         )
 
         Text(
             text = value,
-            style = MaterialTheme.typography.bodyMedium,
+            style =
+                MaterialTheme.typography.bodyMedium,
             fontWeight = FontWeight.Medium
         )
     }
@@ -526,11 +734,20 @@ private fun calculateRemainingTime(
         return "Encerrado"
     }
 
-    val totalSeconds = remainingMillis / 1_000
-    val days = totalSeconds / 86_400
-    val hours = (totalSeconds % 86_400) / 3_600
-    val minutes = (totalSeconds % 3_600) / 60
-    val seconds = totalSeconds % 60
+    val totalSeconds =
+        remainingMillis / 1_000
+
+    val days =
+        totalSeconds / 86_400
+
+    val hours =
+        (totalSeconds % 86_400) / 3_600
+
+    val minutes =
+        (totalSeconds % 3_600) / 60
+
+    val seconds =
+        totalSeconds % 60
 
     return if (days > 0) {
         "${days}d ${hours}h ${minutes}min"
@@ -542,7 +759,8 @@ private fun calculateRemainingTime(
 private fun formatAuctionDate(
     value: Long
 ): String {
-    return Instant.ofEpochMilli(value)
+    return Instant
+        .ofEpochMilli(value)
         .atZone(ZoneId.systemDefault())
         .format(cardDateFormatter)
 }
@@ -551,10 +769,15 @@ private fun formatMoney(
     valueInCents: Long
 ): String {
     val value =
-        BigDecimal.valueOf(valueInCents, 2)
+        BigDecimal.valueOf(
+            valueInCents,
+            2
+        )
 
     return NumberFormat
-        .getCurrencyInstance(Locale("pt", "BR"))
+        .getCurrencyInstance(
+            Locale("pt", "BR")
+        )
         .format(value)
 }
 
@@ -568,9 +791,11 @@ fun ActiveAuctionsScreenPreview() {
                     id = 1,
                     title = "Resident Evil 2",
                     platform = "PlayStation 2",
-                    postUrl = "https://facebook.com",
+                    postUrl =
+                        "https://facebook.com",
                     endTimeMillis =
-                        System.currentTimeMillis() + 3_600_000,
+                        System.currentTimeMillis() +
+                                3_600_000,
                     initialBidInCents = 500,
                     bidIncrementInCents = 500
                 )

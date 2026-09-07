@@ -4,11 +4,16 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.FilterChip
+import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -16,6 +21,8 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -38,119 +45,266 @@ fun AuctionResultActions(
         )
     }
 
-    var finalPriceSaved by rememberSaveable {
+    var finalPriceSaved by rememberSaveable(finalPriceInCents) {
         mutableStateOf(finalPriceInCents != null)
     }
 
     val parsedFinalPrice =
         parseFinalPriceToCents(finalPriceText)
 
+    val isWon =
+        status == AuctionStatus.WON_PENDING_PAYMENT ||
+                status == AuctionStatus.WON_PAID
+
     Column(
-        verticalArrangement = Arrangement.spacedBy(8.dp)
+        verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
         Text(
             text = "Resultado",
-            style = MaterialTheme.typography.titleMedium
+            style = MaterialTheme.typography.titleMedium,
+            fontWeight = FontWeight.SemiBold
         )
 
         Row(
+            modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             FilterChip(
-                selected = status == AuctionStatus.NOT_WON,
+                selected =
+                    status == AuctionStatus.NOT_WON,
                 onClick = {
-                    onStatusChange(AuctionStatus.NOT_WON)
+                    onStatusChange(
+                        AuctionStatus.NOT_WON
+                    )
                 },
                 label = {
-                    Text("Não ganho")
-                }
+                    Text(
+                        text = "Não ganho",
+                        fontWeight = FontWeight.SemiBold
+                    )
+                },
+                colors = FilterChipDefaults.filterChipColors(
+                    selectedContainerColor =
+                        MaterialTheme.colorScheme.errorContainer,
+                    selectedLabelColor =
+                        MaterialTheme.colorScheme.onErrorContainer
+                )
             )
 
             FilterChip(
-                selected =
-                    status == AuctionStatus.WON_PENDING_PAYMENT ||
-                            status == AuctionStatus.WON_PAID,
+                selected = isWon,
                 onClick = {
                     onStatusChange(
                         AuctionStatus.WON_PENDING_PAYMENT
                     )
                 },
                 label = {
-                    Text("Ganho")
-                }
+                    Text(
+                        text = "Ganho",
+                        fontWeight = FontWeight.SemiBold
+                    )
+                },
+                colors = FilterChipDefaults.filterChipColors(
+                    selectedContainerColor =
+                        Color(0xFF14532D),
+                    selectedLabelColor =
+                        Color(0xFFBBF7D0)
+                )
             )
+        }
+
+        if (isWon) {
+            Surface(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(14.dp),
+                color = MaterialTheme.colorScheme.surfaceVariant
+            ) {
+                Column(
+                    modifier = Modifier.padding(14.dp),
+                    verticalArrangement =
+                        Arrangement.spacedBy(10.dp)
+                ) {
+                    Text(
+                        text = "Valor final do leilão",
+                        style =
+                            MaterialTheme.typography.titleSmall,
+                        fontWeight =
+                            FontWeight.SemiBold
+                    )
+
+                    OutlinedTextField(
+                        value = finalPriceText,
+                        onValueChange = {
+                            finalPriceText = it
+                            finalPriceSaved = false
+                        },
+                        label = {
+                            Text("Valor final")
+                        },
+                        placeholder = {
+                            Text("50,00")
+                        },
+                        prefix = {
+                            Text("R$ ")
+                        },
+                        keyboardOptions =
+                            KeyboardOptions(
+                                keyboardType =
+                                    KeyboardType.Decimal
+                            ),
+                        modifier =
+                            Modifier.fillMaxWidth(),
+                        singleLine = true
+                    )
+
+                    Button(
+                        onClick = {
+                            onFinalPriceChange(
+                                requireNotNull(
+                                    parsedFinalPrice
+                                )
+                            )
+
+                            finalPriceSaved = true
+                        },
+                        enabled =
+                            parsedFinalPrice != null &&
+                                    !finalPriceSaved,
+                        modifier =
+                            Modifier.fillMaxWidth(),
+                        shape =
+                            RoundedCornerShape(12.dp)
+                    ) {
+                        Text(
+                            text =
+                                if (finalPriceSaved) {
+                                    "Valor salvo"
+                                } else {
+                                    "Salvar valor final"
+                                },
+                            fontWeight =
+                                FontWeight.SemiBold
+                        )
+                    }
+
+                    if (finalPriceSaved) {
+                        Surface(
+                            shape =
+                                RoundedCornerShape(10.dp),
+                            color = Color(0xFF14532D)
+                        ) {
+                            Text(
+                                text =
+                                    "Valor final salvo.",
+                                modifier =
+                                    Modifier.padding(
+                                        horizontal = 12.dp,
+                                        vertical = 8.dp
+                                    ),
+                                color =
+                                    Color(0xFFBBF7D0),
+                                style =
+                                    MaterialTheme
+                                        .typography
+                                        .bodyMedium,
+                                fontWeight =
+                                    FontWeight.Medium
+                            )
+                        }
+                    }
+                }
+            }
         }
 
         if (
-            status == AuctionStatus.WON_PENDING_PAYMENT ||
-            status == AuctionStatus.WON_PAID
+            status ==
+            AuctionStatus.WON_PENDING_PAYMENT
         ) {
-            OutlinedTextField(
-                value = finalPriceText,
-                onValueChange = {
-                    finalPriceText = it
-                    finalPriceSaved = false
-                },
-                label = {
-                    Text("Valor final")
-                },
-                placeholder = {
-                    Text("50,00")
-                },
-                keyboardOptions = KeyboardOptions(
-                    keyboardType = KeyboardType.Decimal
-                ),
+            Surface(
                 modifier = Modifier.fillMaxWidth(),
-                singleLine = true
-            )
-
-            Button(
-                onClick = {
-                    onFinalPriceChange(
-                        requireNotNull(parsedFinalPrice)
+                shape = RoundedCornerShape(14.dp),
+                color = Color(0xFF78350F)
+            ) {
+                Column(
+                    modifier = Modifier.padding(14.dp),
+                    verticalArrangement =
+                        Arrangement.spacedBy(10.dp)
+                ) {
+                    Text(
+                        text = "Pagamento pendente",
+                        color = Color(0xFFFDE68A),
+                        style =
+                            MaterialTheme.typography.titleSmall,
+                        fontWeight = FontWeight.Bold
                     )
 
-                    finalPriceSaved = true
-                },
-                enabled =
-                    parsedFinalPrice != null &&
-                            !finalPriceSaved,
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Text(
-                    if (finalPriceSaved) {
-                        "Valor salvo"
-                    } else {
-                        "Salvar valor final"
+                    Text(
+                        text =
+                            "Marque como pago quando o pagamento for concluído.",
+                        color = Color(0xFFFDE68A),
+                        style =
+                            MaterialTheme.typography.bodyMedium
+                    )
+
+                    Button(
+                        onClick = {
+                            onStatusChange(
+                                AuctionStatus.WON_PAID
+                            )
+                        },
+                        modifier =
+                            Modifier.fillMaxWidth(),
+                        shape =
+                            RoundedCornerShape(12.dp),
+                        colors =
+                            ButtonDefaults.buttonColors(
+                                containerColor =
+                                    Color(0xFF22C55E),
+                                contentColor =
+                                    Color.Black
+                            )
+                    ) {
+                        Text(
+                            text = "Marcar como pago",
+                            fontWeight =
+                                FontWeight.Bold
+                        )
                     }
-                )
-            }
-
-            if (finalPriceSaved) {
-                Text(
-                    text = "Valor final salvo.",
-                    color = MaterialTheme.colorScheme.primary,
-                    style = MaterialTheme.typography.bodyMedium
-                )
+                }
             }
         }
 
-        if (status == AuctionStatus.WON_PENDING_PAYMENT) {
-            Button(
-                onClick = {
-                    onStatusChange(AuctionStatus.WON_PAID)
-                },
-                modifier = Modifier.fillMaxWidth()
+        if (
+            status ==
+            AuctionStatus.WON_PAID
+        ) {
+            Surface(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(14.dp),
+                color = Color(0xFF14532D)
             ) {
-                Text("Marcar como pago")
-            }
-        }
+                Column(
+                    modifier = Modifier.padding(14.dp),
+                    verticalArrangement =
+                        Arrangement.spacedBy(4.dp)
+                ) {
+                    Text(
+                        text = "Pagamento concluído",
+                        color = Color(0xFFBBF7D0),
+                        style =
+                            MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold
+                    )
 
-        if (status == AuctionStatus.WON_PAID) {
-            Text(
-                text = "Pagamento concluído",
-                style = MaterialTheme.typography.bodyLarge
-            )
+                    Text(
+                        text =
+                            "Este leilão está marcado como pago.",
+                        color = Color(0xFFBBF7D0),
+                        style =
+                            MaterialTheme.typography.bodyMedium
+                    )
+                }
+            }
         }
     }
 }
@@ -158,12 +312,14 @@ fun AuctionResultActions(
 private fun parseFinalPriceToCents(
     value: String
 ): Long? {
-    val normalizedValue = value
-        .trim()
-        .replace(",", ".")
+    val normalizedValue =
+        value
+            .trim()
+            .replace(",", ".")
 
-    val decimalValue = normalizedValue.toBigDecimalOrNull()
-        ?: return null
+    val decimalValue =
+        normalizedValue.toBigDecimalOrNull()
+            ?: return null
 
     if (
         decimalValue < BigDecimal.ZERO ||
@@ -182,7 +338,8 @@ private fun parseFinalPriceToCents(
 private fun formatFinalPriceForForm(
     valueInCents: Long
 ): String {
-    return BigDecimal.valueOf(valueInCents, 2)
+    return BigDecimal
+        .valueOf(valueInCents, 2)
         .stripTrailingZeros()
         .toPlainString()
         .replace(".", ",")
@@ -193,7 +350,8 @@ private fun formatFinalPriceForForm(
 fun AuctionResultActionsPreview() {
     LeilõesRetroGamesTheme {
         AuctionResultActions(
-            status = AuctionStatus.WON_PENDING_PAYMENT,
+            status =
+                AuctionStatus.WON_PENDING_PAYMENT,
             finalPriceInCents = 5_000,
             onStatusChange = {},
             onFinalPriceChange = {}
