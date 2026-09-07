@@ -191,14 +191,6 @@ fun AuctionDetailsScreen(
                 )
 
                 DetailLine(
-                    label = "Status",
-                    value =
-                        formatStatus(
-                            auction.status
-                        )
-                )
-
-                DetailLine(
                     label = "Alertas",
                     value =
                         if (auction.alertsEnabled) {
@@ -546,27 +538,6 @@ private fun formatCondition(
 
         ItemCondition.NOT_INFORMED ->
             "Não informado"
-    }
-}
-
-private fun formatStatus(
-    status: AuctionStatus
-): String {
-    return when (status) {
-        AuctionStatus.ACTIVE ->
-            "Ativo"
-
-        AuctionStatus.ENDED ->
-            "Encerrado"
-
-        AuctionStatus.NOT_WON ->
-            "Não ganho"
-
-        AuctionStatus.WON_PENDING_PAYMENT ->
-            "Ganho — a pagar"
-
-        AuctionStatus.WON_PAID ->
-            "Ganho — pago"
     }
 }
 
