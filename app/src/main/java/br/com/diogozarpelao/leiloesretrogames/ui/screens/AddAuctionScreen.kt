@@ -3,6 +3,7 @@ package br.com.diogozarpelao.leiloesretrogames.ui.screens
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -19,6 +20,7 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.rememberDatePickerState
@@ -28,6 +30,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -122,6 +125,12 @@ fun AddAuctionScreen(
         )
     }
 
+    var alertsEnabled by rememberSaveable(stateKey) {
+        mutableStateOf(
+            auctionToEdit?.alertsEnabled ?: true
+        )
+    }
+
     var conditionMenuExpanded by rememberSaveable {
         mutableStateOf(false)
     }
@@ -185,11 +194,12 @@ fun AddAuctionScreen(
     val initialBidInCents = parseMoneyToCents(initialBid)
     val bidIncrementInCents = parseMoneyToCents(bidIncrement)
 
-    val buyoutPriceInCents = if (buyoutPrice.isBlank()) {
-        null
-    } else {
-        parseMoneyToCents(buyoutPrice)
-    }
+    val buyoutPriceInCents =
+        if (buyoutPrice.isBlank()) {
+            null
+        } else {
+            parseMoneyToCents(buyoutPrice)
+        }
 
     val postUrlIsValid =
         postUrl.startsWith("http://") ||
@@ -658,6 +668,50 @@ fun AddAuctionScreen(
                 minLines = 3
             )
 
+            Column(
+                verticalArrangement = Arrangement.spacedBy(6.dp)
+            ) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement =
+                        Arrangement.SpaceBetween
+                ) {
+                    Column(
+                        modifier = Modifier.weight(1f),
+                        verticalArrangement =
+                            Arrangement.spacedBy(2.dp)
+                    ) {
+                        Text(
+                            text = "Alertas",
+                            style =
+                                MaterialTheme.typography.titleMedium,
+                            fontWeight =
+                                FontWeight.SemiBold
+                        )
+
+                        Text(
+                            text =
+                                if (alertsEnabled) {
+                                    "Notificações ativadas para este leilão."
+                                } else {
+                                    "Notificações desativadas para este leilão."
+                                },
+                            style =
+                                MaterialTheme.typography.bodySmall,
+                            color =
+                                MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+
+                    Switch(
+                        checked = alertsEnabled,
+                        onCheckedChange = {
+                            alertsEnabled = it
+                        }
+                    )
+                }
+            }
+
             Button(
                 onClick = {
                     onSave(
@@ -686,10 +740,7 @@ fun AddAuctionScreen(
                             status =
                                 auctionToEdit?.status
                                     ?: AuctionStatus.ACTIVE,
-                            alertsEnabled =
-                                auctionToEdit
-                                    ?.alertsEnabled
-                                    ?: true
+                            alertsEnabled = alertsEnabled
                         )
                     )
                 },
