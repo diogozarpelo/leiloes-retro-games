@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <meta
+            name="description"
+            content="Leilões RetroGames — aplicativo Android para organizar e acompanhar leilões de jogos, consoles e itens retrô."
+    >
+
+    <title>Leilões RetroGames</title>
+
+    <link rel="stylesheet" href="styles.css">
+</head>
+
+<body>
+
+<header class="hero">
+    <div class="container hero-content">
+
+        <span class="project-label">ANDROID • KOTLIN • JETPACK COMPOSE</span>
+
+        <h1>Leilões RetroGames</h1>
+
+        <p class="hero-description">
+            Organize, acompanhe e gerencie seus leilões de jogos,
+            consoles e itens retrô em um só lugar.
+        </p>
+
+        <div class="hero-actions">
+            <a
+                    class="button button-primary"
+                    href="https://github.com/diogozarpelo/leiloes-retro-games"
+                    target="_blank"
+                    rel="noopener noreferrer"
+            >
+                Ver código no GitHub
+            </a>
+
+            <a
+                    class="button button-secondary"
+                    href="#screenshots"
+            >
+                Ver aplicação
+            </a>
+        </div>
+
+        <div class="status">
+            <span class="status-dot"></span>
+            v1.0 funcional e validada
+        </div>
+
+    </div>
+</header>
+
+<main>
+
+    <section class="section">
+        <div class="container">
+
+            <div class="section-heading">
+                <span class="eyebrow">O projeto</span>
+                <h2>Acompanhamento de leilões sem perder o prazo</h2>
+
+                <p>
+                    O Leilões RetroGames nasceu para facilitar o
+                    acompanhamento de leilões publicados em grupos
+                    e comunidades online.
+                </p>
+            </div>
+
+            <div class="features-grid">
+
+                <article class="feature-card">
+                    <span class="feature-number">01</span>
+                    <h3>Leilões ativos</h3>
+                    <p>
+                        Centralização dos itens acompanhados com
+                        data, horário e contagem regressiva em tempo real.
+                    </p>
+                </article>
+
+                <article class="feature-card">
+                    <span class="feature-number">02</span>
+                    <h3>Alertas automáticos</h3>
+                    <p>
+                        Notificações locais antes do encerramento
+                        para reduzir o risco de perder um leilão.
+                    </p>
+                </article>
+
+                <article class="feature-card">
+                    <span class="feature-number">03</span>
+                    <h3>Resultados</h3>
+                    <p>
+                        Organização entre pendentes, ganhos,
+                        não ganhos, pagamentos pendentes e pagos.
+                    </p>
+                </article>
+
+                <article class="feature-card">
+                    <span class="feature-number">04</span>
+                    <h3>Persistência local</h3>
+                    <p>
+                        Os dados ficam armazenados no dispositivo
+                        utilizando Room, sem necessidade de servidor.
+                    </p>
+                </article>
+
+            </div>
+        </div>
+    </section>
+
+    <section
+            class="section section-dark"
+            id="screenshots"
+    >
+        <div class="container">
+
+            <div class="section-heading">
+                <span class="eyebrow">Demonstração</span>
+                <h2>Interface do aplicativo</h2>
+
+                <p>
+                    Interface desenvolvida com Jetpack Compose
+                    e identidade visual inspirada no universo gamer.
+                </p>
+            </div>
+
+            <div class="screenshots-grid">
+
+                <article class="screenshot-card">
+                    <div class="phone-frame">
+                        <img
+                                src="screenshots/01-home-ativos.png"
+                                alt="Tela de leilões ativos"
+                        >
+                    </div>
+
+                    <h3>Leilões ativos</h3>
+
+                    <p>
+                        Contagem regressiva, plataforma,
+                        encerramento e valores principais.
+                    </p>
+                </article>
+
+                <article class="screenshot-card">
+                    <div class="phone-frame">
+                        <img
+                                src="screenshots/02-encerrados.png"
+                                alt="Tela de leilões encerrados"
+                        >
+                    </div>
+
+                    <h3>Leilões encerrados</h3>
+
+                    <p>
+                        Filtros para resultados pendentes,
+                        ganhos e não ganhos.
+                    </p>
+                </article>
+
+                <article class="screenshot-card">
+                    <div class="phone-frame">
+                        <img
+                                src="screenshots/03-detalhes-leilao.png"
+                                alt="Tela de detalhes do leilão"
+                        >
+                    </div>
+
+                    <h3>Detalhes</h3>
+
+                    <p>
+                        Informações, resultado, pagamento,
+                        alertas e acesso à publicação original.
+                    </p>
+                </article>
+
+                <article class="screenshot-card">
+                    <div class="phone-frame">
+                        <img
+                                src="screenshots/04-cadastro-leilao.png"
+                                alt="Tela de cadastro de leilão"
+                        >
+                    </div>
+
+                    <h3>Cadastro</h3>
+
+                    <p>
+                        Plataforma, conservação, valores,
+                        encerramento, observações e alertas.
+                    </p>
+                </article>
+
+            </div>
+        </div>
+    </section>
+
+    <section class="section">
+        <div class="container">
+
+            <div class="section-heading">
+                <span class="eyebrow">Fluxo</span>
+                <h2>Do cadastro ao resultado</h2>
+            </div>
+
+            <div class="flow">
+
+                <div class="flow-item">
+                    <span>1</span>
+                    <strong>Cadastrar</strong>
+                    <p>Registre o leilão e seu encerramento.</p>
+                </div>
+
+                <div class="flow-arrow">→</div>
+
+                <div class="flow-item">
+                    <span>2</span>
+                    <strong>Acompanhar</strong>
+                    <p>Veja o tempo restante e receba alertas.</p>
+                </div>
+
+                <div class="flow-arrow">→</div>
+
+                <div class="flow-item">
+                    <span>3</span>
+                    <strong>Finalizar</strong>
+                    <p>Informe se o leilão foi ganho ou não.</p>
+                </div>
+
+                <div class="flow-arrow">→</div>
+
+                <div class="flow-item">
+                    <span>4</span>
+                    <strong>Controlar</strong>
+                    <p>Acompanhe valor final e pagamento.</p>
+                </div>
+
+            </div>
+        </div>
+    </section>
+
+    <section class="section section-dark">
+        <div class="container">
+
+            <div class="section-heading">
+                <span class="eyebrow">Tecnologias</span>
+                <h2>Stack do projeto</h2>
+            </div>
+
+            <div class="tech-grid">
+                <div class="tech-card">
+                    <strong>Kotlin</strong>
+                    <span>2.2.10</span>
+                </div>
+
+                <div class="tech-card">
+                    <strong>Jetpack Compose</strong>
+                    <span>Interface</span>
+                </div>
+
+                <div class="tech-card">
+                    <strong>Material 3</strong>
+                    <span>Design system</span>
+                </div>
+
+                <div class="tech-card">
+                    <strong>Room</strong>
+                    <span>Persistência local</span>
+                </div>
+
+                <div class="tech-card">
+                    <strong>ViewModel</strong>
+                    <span>Estado</span>
+                </div>
+
+                <div class="tech-card">
+                    <strong>StateFlow</strong>
+                    <span>Fluxo reativo</span>
+                </div>
+
+                <div class="tech-card">
+                    <strong>AlarmManager</strong>
+                    <span>Alertas</span>
+                </div>
+
+                <div class="tech-card">
+                    <strong>Gradle</strong>
+                    <span>Build</span>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section class="section">
+        <div class="container final-cta">
+
+            <span class="eyebrow">Open source • Portfólio</span>
+
+            <h2>Conheça o projeto completo</h2>
+
+            <p>
+                Código-fonte, arquitetura, documentação técnica
+                e histórico de desenvolvimento estão disponíveis
+                no GitHub.
+            </p>
+
+            <a
+                    class="button button-primary"
+                    href="https://github.com/diogozarpelo/leiloes-retro-games"
+                    target="_blank"
+                    rel="noopener noreferrer"
+            >
+                Abrir repositório
+            </a>
+
+        </div>
+    </section>
+
+</main>
+
+<footer>
+    <div class="container footer-content">
+        <div>
+            <strong>Leilões RetroGames</strong>
+            <p>Projeto desenvolvido por Diogo Zarpelão.</p>
+        </div>
+
+        <a
+                href="https://github.com/diogozarpelo"
+                target="_blank"
+                rel="noopener noreferrer"
+        >
+            @diogozarpelo
+        </a>
+    </div>
+</footer>
+
+</body>
+</html>
