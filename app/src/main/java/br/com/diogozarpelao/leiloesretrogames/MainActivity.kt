@@ -23,6 +23,7 @@ import br.com.diogozarpelao.leiloesretrogames.model.AuctionStatus
 import br.com.diogozarpelao.leiloesretrogames.ui.screens.ActiveAuctionsScreen
 import br.com.diogozarpelao.leiloesretrogames.ui.screens.AddAuctionScreen
 import br.com.diogozarpelao.leiloesretrogames.ui.screens.AuctionDetailsScreen
+import br.com.diogozarpelao.leiloesretrogames.ui.screens.AuctionSection
 import br.com.diogozarpelao.leiloesretrogames.ui.theme.LeilõesRetroGamesTheme
 import br.com.diogozarpelao.leiloesretrogames.ui.viewmodel.AuctionViewModel
 import br.com.diogozarpelao.leiloesretrogames.ui.viewmodel.AuctionViewModelFactory
@@ -50,14 +51,18 @@ class MainActivity : ComponentActivity() {
                 ) {}
 
             LaunchedEffect(Unit) {
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                if (
+                    Build.VERSION.SDK_INT >=
+                    Build.VERSION_CODES.TIRAMISU
+                ) {
                     notificationPermissionLauncher.launch(
                         Manifest.permission.POST_NOTIFICATIONS
                     )
                 }
             }
 
-            val auctions by auctionViewModel.auctions.collectAsState()
+            val auctions by
+            auctionViewModel.auctions.collectAsState()
 
             var showAddAuctionScreen by rememberSaveable {
                 mutableStateOf(false)
@@ -71,13 +76,19 @@ class MainActivity : ComponentActivity() {
                 mutableStateOf<Long?>(null)
             }
 
-            val selectedAuction = auctions.firstOrNull { auction ->
-                auction.id == selectedAuctionId
+            var selectedAuctionSection by rememberSaveable {
+                mutableStateOf(AuctionSection.ACTIVE)
             }
 
-            val auctionBeingEdited = auctions.firstOrNull { auction ->
-                auction.id == editingAuctionId
-            }
+            val selectedAuction =
+                auctions.firstOrNull { auction ->
+                    auction.id == selectedAuctionId
+                }
+
+            val auctionBeingEdited =
+                auctions.firstOrNull { auction ->
+                    auction.id == editingAuctionId
+                }
 
             LeilõesRetroGamesTheme {
                 Scaffold(
@@ -86,9 +97,12 @@ class MainActivity : ComponentActivity() {
                     when {
                         auctionBeingEdited != null -> {
                             AddAuctionScreen(
-                                auctionToEdit = auctionBeingEdited,
+                                auctionToEdit =
+                                    auctionBeingEdited,
                                 onSave = { updatedAuction ->
-                                    auctionViewModel.update(updatedAuction)
+                                    auctionViewModel.update(
+                                        updatedAuction
+                                    )
 
                                     notificationScheduler.cancel(
                                         updatedAuction.id
@@ -99,12 +113,16 @@ class MainActivity : ComponentActivity() {
                                     )
 
                                     editingAuctionId = null
-                                    selectedAuctionId = updatedAuction.id
+                                    selectedAuctionId =
+                                        updatedAuction.id
                                 },
                                 onCancel = {
                                     editingAuctionId = null
                                 },
-                                modifier = Modifier.padding(innerPadding)
+                                modifier =
+                                    Modifier.padding(
+                                        innerPadding
+                                    )
                             )
                         }
 
@@ -115,7 +133,8 @@ class MainActivity : ComponentActivity() {
                                     selectedAuctionId = null
                                 },
                                 onEdit = {
-                                    editingAuctionId = selectedAuction.id
+                                    editingAuctionId =
+                                        selectedAuction.id
                                 },
                                 onStatusChange = { newStatus ->
                                     auctionViewModel.update(
@@ -137,16 +156,18 @@ class MainActivity : ComponentActivity() {
                                 onFinalPriceChange = { finalPrice ->
                                     auctionViewModel.update(
                                         selectedAuction.copy(
-                                            finalPriceInCents = finalPrice,
-                                            status = if (
-                                                selectedAuction.status ==
-                                                AuctionStatus.WON_PAID
-                                            ) {
-                                                AuctionStatus.WON_PAID
-                                            } else {
-                                                AuctionStatus
-                                                    .WON_PENDING_PAYMENT
-                                            }
+                                            finalPriceInCents =
+                                                finalPrice,
+                                            status =
+                                                if (
+                                                    selectedAuction.status ==
+                                                    AuctionStatus.WON_PAID
+                                                ) {
+                                                    AuctionStatus.WON_PAID
+                                                } else {
+                                                    AuctionStatus
+                                                        .WON_PENDING_PAYMENT
+                                                }
                                         )
                                     )
                                 },
@@ -161,7 +182,10 @@ class MainActivity : ComponentActivity() {
 
                                     selectedAuctionId = null
                                 },
-                                modifier = Modifier.padding(innerPadding)
+                                modifier =
+                                    Modifier.padding(
+                                        innerPadding
+                                    )
                             )
                         }
 
@@ -183,20 +207,32 @@ class MainActivity : ComponentActivity() {
                                 onCancel = {
                                     showAddAuctionScreen = false
                                 },
-                                modifier = Modifier.padding(innerPadding)
+                                modifier =
+                                    Modifier.padding(
+                                        innerPadding
+                                    )
                             )
                         }
 
                         else -> {
                             ActiveAuctionsScreen(
                                 auctions = auctions,
+                                selectedSection =
+                                    selectedAuctionSection,
+                                onSectionChange = {
+                                    selectedAuctionSection = it
+                                },
                                 onAuctionClick = { auction ->
-                                    selectedAuctionId = auction.id
+                                    selectedAuctionId =
+                                        auction.id
                                 },
                                 onAddAuction = {
                                     showAddAuctionScreen = true
                                 },
-                                modifier = Modifier.padding(innerPadding)
+                                modifier =
+                                    Modifier.padding(
+                                        innerPadding
+                                    )
                             )
                         }
                     }

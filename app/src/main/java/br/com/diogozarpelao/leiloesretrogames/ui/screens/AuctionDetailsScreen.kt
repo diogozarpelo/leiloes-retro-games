@@ -59,18 +59,23 @@ fun AuctionDetailsScreen(
     }
 
     val uriHandler = LocalUriHandler.current
+
     val isEnded =
-        auction.endTimeMillis <= System.currentTimeMillis()
+        auction.endTimeMillis <=
+                System.currentTimeMillis()
 
     Column(
         modifier = modifier
             .fillMaxSize()
-            .verticalScroll(rememberScrollState())
+            .verticalScroll(
+                rememberScrollState()
+            )
             .padding(
                 horizontal = 20.dp,
                 vertical = 16.dp
             ),
-        verticalArrangement = Arrangement.spacedBy(14.dp)
+        verticalArrangement =
+            Arrangement.spacedBy(14.dp)
     ) {
         TextButton(
             onClick = onBack
@@ -78,28 +83,28 @@ fun AuctionDetailsScreen(
             Text("Voltar")
         }
 
-        Column(
-            verticalArrangement = Arrangement.spacedBy(8.dp)
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement =
+                Arrangement.spacedBy(10.dp)
         ) {
-            Text(
-                text = auction.title,
-                style = MaterialTheme.typography.headlineMedium,
-                fontWeight = FontWeight.Bold
+            PlatformBadge(
+                platform = auction.platform
             )
 
-            Row(
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                PlatformBadge(
-                    platform = auction.platform
-                )
-
-                AuctionStatusBadge(
-                    auction = auction,
-                    isEnded = isEnded
-                )
-            }
+            Text(
+                text = auction.title,
+                modifier = Modifier.weight(1f),
+                style =
+                    MaterialTheme.typography.headlineMedium,
+                fontWeight = FontWeight.Bold
+            )
         }
+
+        AuctionStatusBadge(
+            auction = auction,
+            isEnded = isEnded
+        )
 
         Card(
             modifier = Modifier.fillMaxWidth(),
@@ -216,12 +221,14 @@ fun AuctionDetailsScreen(
                         text = "Resultado do leilão",
                         style =
                             MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.SemiBold
+                        fontWeight =
+                            FontWeight.SemiBold
                     )
 
                     AuctionResultActions(
                         status = auction.status,
-                        onStatusChange = onStatusChange,
+                        onStatusChange =
+                            onStatusChange,
                         finalPriceInCents =
                             auction.finalPriceInCents,
                         onFinalPriceChange =
@@ -249,7 +256,8 @@ fun AuctionDetailsScreen(
                         text = "Descrição e observações",
                         style =
                             MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.SemiBold
+                        fontWeight =
+                            FontWeight.SemiBold
                     )
 
                     Text(
@@ -257,7 +265,8 @@ fun AuctionDetailsScreen(
                         style =
                             MaterialTheme.typography.bodyLarge,
                         color =
-                            MaterialTheme.colorScheme.onSurfaceVariant
+                            MaterialTheme.colorScheme
+                                .onSurfaceVariant
                     )
                 }
             }
@@ -305,6 +314,17 @@ fun AuctionDetailsScreen(
         ) {
             Text(
                 text = "Excluir leilão",
+                fontWeight = FontWeight.SemiBold
+            )
+        }
+
+        OutlinedButton(
+            onClick = onBack,
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(14.dp)
+        ) {
+            Text(
+                text = "Voltar",
                 fontWeight = FontWeight.SemiBold
             )
         }
@@ -356,7 +376,10 @@ private fun PlatformBadge(
 ) {
     Surface(
         shape = RoundedCornerShape(8.dp),
-        color = platformBackgroundColor(platform)
+        color =
+            platformBackgroundColor(
+                platform
+            )
     ) {
         Text(
             text = platformBadge(platform),
@@ -367,7 +390,10 @@ private fun PlatformBadge(
             style =
                 MaterialTheme.typography.labelMedium,
             fontWeight = FontWeight.Bold,
-            color = platformTextColor(platform)
+            color =
+                platformTextColor(
+                    platform
+                )
         )
     }
 }
@@ -377,30 +403,46 @@ private fun AuctionStatusBadge(
     auction: Auction,
     isEnded: Boolean
 ) {
-    val text = when {
-        !isEnded ->
-            "Em andamento"
+    val resultPending =
+        isEnded &&
+                (
+                        auction.status ==
+                                AuctionStatus.ACTIVE ||
+                                auction.status ==
+                                AuctionStatus.ENDED
+                        )
 
-        auction.status ==
-                AuctionStatus.NOT_WON ->
-            "Não ganho"
+    val text =
+        when {
+            !isEnded ->
+                "Em andamento"
 
-        auction.status ==
-                AuctionStatus.WON_PENDING_PAYMENT ->
-            "A pagar"
+            resultPending ->
+                "Resultado pendente"
 
-        auction.status ==
-                AuctionStatus.WON_PAID ->
-            "Pago"
+            auction.status ==
+                    AuctionStatus.NOT_WON ->
+                "Não ganho"
 
-        else ->
-            "Encerrado"
-    }
+            auction.status ==
+                    AuctionStatus.WON_PENDING_PAYMENT ->
+                "A pagar"
+
+            auction.status ==
+                    AuctionStatus.WON_PAID ->
+                "Pago"
+
+            else ->
+                "Encerrado"
+        }
 
     val backgroundColor =
         when {
             !isEnded ->
                 MaterialTheme.colorScheme.primaryContainer
+
+            resultPending ->
+                Color(0xFF7C2D12)
 
             auction.status ==
                     AuctionStatus.NOT_WON ->
@@ -422,6 +464,9 @@ private fun AuctionStatusBadge(
         when {
             !isEnded ->
                 MaterialTheme.colorScheme.onPrimaryContainer
+
+            resultPending ->
+                Color(0xFFFED7AA)
 
             auction.status ==
                     AuctionStatus.NOT_WON ->
@@ -508,7 +553,10 @@ private fun formatMoney(
     valueInCents: Long
 ): String {
     val value =
-        BigDecimal.valueOf(valueInCents, 2)
+        BigDecimal.valueOf(
+            valueInCents,
+            2
+        )
 
     return NumberFormat
         .getCurrencyInstance(
@@ -558,9 +606,7 @@ fun AuctionDetailsScreenPreview() {
                 initialBidInCents = 500,
                 bidIncrementInCents = 500,
                 buyoutPriceInCents = 10_000,
-                finalPriceInCents = 8_500,
-                status =
-                    AuctionStatus.WON_PENDING_PAYMENT
+                status = AuctionStatus.ENDED
             ),
             onBack = {},
             onEdit = {},
