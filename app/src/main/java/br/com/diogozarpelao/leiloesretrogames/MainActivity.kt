@@ -18,6 +18,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.lifecycle.viewmodel.compose.viewModel
 import br.com.diogozarpelao.leiloesretrogames.model.AuctionStatus
 import br.com.diogozarpelao.leiloesretrogames.ui.screens.ActiveAuctionsScreen
@@ -31,6 +32,8 @@ import br.com.diogozarpelao.leiloesretrogames.ui.viewmodel.AuctionViewModelFacto
 class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
+        installSplashScreen()
+
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
 

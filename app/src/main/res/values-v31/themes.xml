@@ -2,12 +2,9 @@
 <resources>
 
     <style
-        name="Theme.LeiloesRetroGames"
-        parent="android:Theme.Material.Light.NoActionBar" />
-
-    <style
         name="Theme.LeiloesRetroGames.Starting"
         parent="Theme.SplashScreen">
+
         <item name="windowSplashScreenBackground">
             @color/gamer_background
         </item>
@@ -19,6 +16,7 @@
         <item name="postSplashScreenTheme">
             @style/Theme.LeiloesRetroGames
         </item>
+
     </style>
 
 </resources>
