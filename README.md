@@ -20,10 +20,10 @@
   <img src="docs/screenshots/01-home-ativos.png" alt="Tela de leilões ativos do Leilões RetroGames" width="420">
 </p>
 
-### Resultados pendentes
+### Leilões encerrados
 
 <p align="center">
-  <img src="docs/screenshots/02-home-pendentes.png" alt="Tela de leilões encerrados com resultado pendente" width="420">
+  <img src="docs/screenshots/02-encerrados.png" alt="Tela de leilões encerrados do Leilões RetroGames" width="420">
 </p>
 
 ### Detalhes do leilão
