@@ -19,11 +19,11 @@ class AuctionNotificationScheduler(
     fun schedule(
         auction: Auction
     ) {
+        cancel(auction.id)
+
         if (!auction.alertsEnabled) {
             return
         }
-
-        cancel(auction.id)
 
         ALERT_MINUTES.forEach { minutesBefore ->
             scheduleAlert(
