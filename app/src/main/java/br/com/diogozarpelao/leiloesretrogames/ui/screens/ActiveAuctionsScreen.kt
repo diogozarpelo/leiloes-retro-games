@@ -13,57 +13,28 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.FilterChip
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.produceState
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import br.com.diogozarpelao.leiloesretrogames.model.Auction
-import br.com.diogozarpelao.leiloesretrogames.model.AuctionStatus
 import br.com.diogozarpelao.leiloesretrogames.ui.theme.LeilõesRetroGamesTheme
-import java.math.BigDecimal
-import java.text.NumberFormat
-import java.time.Instant
-import java.time.ZoneId
-import java.time.format.DateTimeFormatter
-import java.util.Locale
 import kotlinx.coroutines.delay
 
 enum class AuctionSection {
     ACTIVE,
     ENDED
 }
-
-private enum class EndedAuctionFilter {
-    ALL,
-    PENDING,
-    WON,
-    NOT_WON
-}
-
-private enum class WonAuctionFilter {
-    ALL,
-    PENDING_PAYMENT,
-    PAID
-}
-
-private val cardDateFormatter: DateTimeFormatter =
-    DateTimeFormatter.ofPattern("dd/MM/yyyy 'às' HH:mm")
 
 @Composable
 fun ActiveAuctionsScreen(
@@ -75,95 +46,64 @@ fun ActiveAuctionsScreen(
     modifier: Modifier = Modifier
 ) {
     var endedFilter by rememberSaveable {
-        mutableStateOf(EndedAuctionFilter.ALL)
+        mutableStateOf(
+            EndedAuctionFilter.ALL
+        )
     }
 
     var wonFilter by rememberSaveable {
-        mutableStateOf(WonAuctionFilter.ALL)
+        mutableStateOf(
+            WonAuctionFilter.ALL
+        )
     }
 
-    val currentTime by produceState(
-        initialValue = System.currentTimeMillis()
-    ) {
-        while (true) {
-            value = System.currentTimeMillis()
-            delay(1_000)
+    val boundaryTime =
+        rememberAuctionBoundaryTime(
+            auctions = auctions
+        )
+
+    val activeCount =
+        remember(
+            auctions,
+            boundaryTime
+        ) {
+            countActiveAuctions(
+                auctions = auctions,
+                currentTime = boundaryTime
+            )
         }
-    }
 
-    val activeCount = auctions.count {
-        it.endTimeMillis > currentTime
-    }
-
-    val endedCount = auctions.count {
-        it.endTimeMillis <= currentTime
-    }
+    val endedCount =
+        remember(
+            auctions,
+            boundaryTime
+        ) {
+            countEndedAuctions(
+                auctions = auctions,
+                currentTime = boundaryTime
+            )
+        }
 
     val displayedAuctions =
-        auctions
-            .filter { auction ->
-                when (selectedSection) {
-                    AuctionSection.ACTIVE ->
-                        auction.endTimeMillis > currentTime
-
-                    AuctionSection.ENDED -> {
-                        val isEnded =
-                            auction.endTimeMillis <= currentTime
-
-                        val matchesFilter =
-                            when (endedFilter) {
-                                EndedAuctionFilter.ALL ->
-                                    true
-
-                                EndedAuctionFilter.PENDING ->
-                                    isResultPending(auction)
-
-                                EndedAuctionFilter.WON -> {
-                                    val isWon =
-                                        auction.status ==
-                                                AuctionStatus.WON_PENDING_PAYMENT ||
-                                                auction.status ==
-                                                AuctionStatus.WON_PAID
-
-                                    val matchesWonFilter =
-                                        when (wonFilter) {
-                                            WonAuctionFilter.ALL ->
-                                                true
-
-                                            WonAuctionFilter.PENDING_PAYMENT ->
-                                                auction.status ==
-                                                        AuctionStatus.WON_PENDING_PAYMENT
-
-                                            WonAuctionFilter.PAID ->
-                                                auction.status ==
-                                                        AuctionStatus.WON_PAID
-                                        }
-
-                                    isWon && matchesWonFilter
-                                }
-
-                                EndedAuctionFilter.NOT_WON ->
-                                    auction.status ==
-                                            AuctionStatus.NOT_WON
-                            }
-
-                        isEnded && matchesFilter
-                    }
-                }
-            }
-            .let { filteredAuctions ->
-                if (selectedSection == AuctionSection.ENDED) {
-                    filteredAuctions.sortedWith(
-                        compareByDescending<Auction> {
-                            isResultPending(it)
-                        }.thenByDescending {
-                            it.endTimeMillis
-                        }
-                    )
-                } else {
-                    filteredAuctions
-                }
-            }
+        remember(
+            auctions,
+            selectedSection,
+            endedFilter,
+            wonFilter,
+            boundaryTime
+        ) {
+            filterAuctionsForSection(
+                auctions = auctions,
+                selectedSection =
+                    selectedSection,
+                endedFilter =
+                    endedFilter,
+                wonFilter =
+                    wonFilter,
+                currentTime =
+                    boundaryTime
+            )
+        }
 
     Column(
         modifier = modifier
@@ -172,642 +112,269 @@ fun ActiveAuctionsScreen(
                 horizontal = 20.dp,
                 vertical = 16.dp
             ),
-        verticalArrangement = Arrangement.spacedBy(14.dp)
+        verticalArrangement =
+            Arrangement.spacedBy(14.dp)
     ) {
-        Column(
-            verticalArrangement = Arrangement.spacedBy(4.dp)
-        ) {
-            Text(
-                text = "Leilões RetroGames",
-                style = MaterialTheme.typography.headlineMedium,
-                fontWeight = FontWeight.Bold
-            )
-
-            Text(
-                text = "Acompanhe seus leilões em um só lugar",
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-        }
+        ActiveAuctionsHeader()
 
         Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(10.dp)
+            modifier =
+                Modifier.fillMaxWidth(),
+            horizontalArrangement =
+                Arrangement.spacedBy(10.dp)
         ) {
-            SummaryCard(
+            AuctionSummaryCard(
                 title = "Ativos",
-                value = activeCount.toString(),
+                value =
+                    activeCount.toString(),
                 selected =
-                    selectedSection == AuctionSection.ACTIVE,
+                    selectedSection ==
+                        AuctionSection.ACTIVE,
                 onClick = {
-                    onSectionChange(AuctionSection.ACTIVE)
+                    onSectionChange(
+                        AuctionSection.ACTIVE
+                    )
                 },
-                modifier = Modifier.weight(1f)
+                modifier =
+                    Modifier.weight(1f)
             )
 
-            SummaryCard(
+            AuctionSummaryCard(
                 title = "Encerrados",
-                value = endedCount.toString(),
+                value =
+                    endedCount.toString(),
                 selected =
-                    selectedSection == AuctionSection.ENDED,
+                    selectedSection ==
+                        AuctionSection.ENDED,
                 onClick = {
-                    onSectionChange(AuctionSection.ENDED)
+                    onSectionChange(
+                        AuctionSection.ENDED
+                    )
                 },
-                modifier = Modifier.weight(1f)
+                modifier =
+                    Modifier.weight(1f)
             )
-        }
-
-        if (selectedSection == AuctionSection.ENDED) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(4.dp)
-            ) {
-                FilterChip(
-                    selected =
-                        endedFilter == EndedAuctionFilter.ALL,
-                    onClick = {
-                        endedFilter = EndedAuctionFilter.ALL
-                    },
-                    modifier = Modifier.weight(0.8f),
-                    label = {
-                        FilterLabel("Todos")
-                    }
-                )
-
-                FilterChip(
-                    selected =
-                        endedFilter == EndedAuctionFilter.PENDING,
-                    onClick = {
-                        endedFilter = EndedAuctionFilter.PENDING
-                    },
-                    modifier = Modifier.weight(1.2f),
-                    label = {
-                        FilterLabel("Pendentes")
-                    }
-                )
-
-                FilterChip(
-                    selected =
-                        endedFilter == EndedAuctionFilter.WON,
-                    onClick = {
-                        endedFilter = EndedAuctionFilter.WON
-                    },
-                    modifier = Modifier.weight(1f),
-                    label = {
-                        FilterLabel("Ganhos")
-                    }
-                )
-
-                FilterChip(
-                    selected =
-                        endedFilter == EndedAuctionFilter.NOT_WON,
-                    onClick = {
-                        endedFilter = EndedAuctionFilter.NOT_WON
-                    },
-                    modifier = Modifier.weight(1.3f),
-                    label = {
-                        FilterLabel("Não ganhos")
-                    }
-                )
-            }
         }
 
         if (
-            selectedSection == AuctionSection.ENDED &&
-            endedFilter == EndedAuctionFilter.WON
+            selectedSection ==
+                AuctionSection.ENDED
         ) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                FilterChip(
-                    selected =
-                        wonFilter == WonAuctionFilter.ALL,
-                    onClick = {
-                        wonFilter = WonAuctionFilter.ALL
-                    },
-                    modifier = Modifier.weight(1f),
-                    label = {
-                        Text("Todos")
-                    }
-                )
+            EndedAuctionFilters(
+                selectedFilter =
+                    endedFilter,
+                onFilterSelected = {
+                    endedFilter = it
+                }
+            )
+        }
 
-                FilterChip(
-                    selected =
-                        wonFilter ==
-                                WonAuctionFilter.PENDING_PAYMENT,
-                    onClick = {
-                        wonFilter =
-                            WonAuctionFilter.PENDING_PAYMENT
-                    },
-                    modifier = Modifier.weight(1f),
-                    label = {
-                        Text("A pagar")
-                    }
-                )
-
-                FilterChip(
-                    selected =
-                        wonFilter == WonAuctionFilter.PAID,
-                    onClick = {
-                        wonFilter = WonAuctionFilter.PAID
-                    },
-                    modifier = Modifier.weight(1f),
-                    label = {
-                        Text("Pagos")
-                    }
-                )
-            }
+        if (
+            selectedSection ==
+                AuctionSection.ENDED &&
+            endedFilter ==
+                EndedAuctionFilter.WON
+        ) {
+            WonAuctionFilters(
+                selectedFilter =
+                    wonFilter,
+                onFilterSelected = {
+                    wonFilter = it
+                }
+            )
         }
 
         Text(
             text =
-                if (selectedSection == AuctionSection.ACTIVE) {
+                if (
+                    selectedSection ==
+                        AuctionSection.ACTIVE
+                ) {
                     "Leilões ativos"
                 } else {
                     "Leilões encerrados"
                 },
-            style = MaterialTheme.typography.titleMedium,
-            fontWeight = FontWeight.SemiBold
+            style =
+                MaterialTheme
+                    .typography
+                    .titleMedium,
+            fontWeight =
+                FontWeight.SemiBold
         )
 
-        if (displayedAuctions.isEmpty()) {
+        if (
+            displayedAuctions.isEmpty()
+        ) {
             EmptyAuctionsMessage(
-                text = when {
-                    selectedSection == AuctionSection.ACTIVE ->
-                        "Nenhum leilão ativo no momento."
-
-                    endedFilter == EndedAuctionFilter.PENDING ->
-                        "Nenhum resultado pendente."
-
-                    endedFilter == EndedAuctionFilter.NOT_WON ->
-                        "Nenhum leilão não ganho."
-
-                    endedFilter == EndedAuctionFilter.WON &&
-                            wonFilter ==
-                            WonAuctionFilter.PENDING_PAYMENT ->
-                        "Nenhum leilão aguardando pagamento."
-
-                    endedFilter == EndedAuctionFilter.WON &&
-                            wonFilter ==
-                            WonAuctionFilter.PAID ->
-                        "Nenhum leilão pago."
-
-                    endedFilter == EndedAuctionFilter.WON ->
-                        "Nenhum leilão ganho."
-
-                    else ->
-                        "Nenhum leilão encerrado."
-                }
+                text =
+                    emptyAuctionsMessage(
+                        selectedSection =
+                            selectedSection,
+                        endedFilter =
+                            endedFilter,
+                        wonFilter =
+                            wonFilter
+                    )
             )
         } else {
             LazyColumn(
-                modifier = Modifier.weight(1f),
-                verticalArrangement = Arrangement.spacedBy(10.dp)
+                modifier =
+                    Modifier.weight(1f),
+                verticalArrangement =
+                    Arrangement.spacedBy(
+                        10.dp
+                    )
             ) {
                 items(
-                    items = displayedAuctions,
+                    items =
+                        displayedAuctions,
                     key = { auction ->
                         auction.id
                     }
                 ) { auction ->
                     AuctionCard(
                         auction = auction,
-                        currentTime = currentTime,
                         onClick = {
-                            onAuctionClick(auction)
+                            onAuctionClick(
+                                auction
+                            )
                         }
                     )
                 }
 
                 item {
                     Spacer(
-                        modifier = Modifier.height(4.dp)
+                        modifier =
+                            Modifier.height(4.dp)
                     )
                 }
             }
         }
 
         Button(
-            onClick = onAddAuction,
-            modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(14.dp),
-            contentPadding = ButtonDefaults.ContentPadding
+            onClick =
+                onAddAuction,
+            modifier =
+                Modifier.fillMaxWidth(),
+            shape =
+                RoundedCornerShape(14.dp),
+            contentPadding =
+                ButtonDefaults.ContentPadding
         ) {
             Text(
-                text = "Cadastrar novo leilão",
-                fontWeight = FontWeight.SemiBold
+                text =
+                    "Cadastrar novo leilão",
+                fontWeight =
+                    FontWeight.SemiBold
             )
         }
 
         OutlinedButton(
             onClick = {
                 onSectionChange(
-                    if (selectedSection == AuctionSection.ACTIVE) {
+                    if (
+                        selectedSection ==
+                            AuctionSection.ACTIVE
+                    ) {
                         AuctionSection.ENDED
                     } else {
                         AuctionSection.ACTIVE
                     }
                 )
             },
-            modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(14.dp)
+            modifier =
+                Modifier.fillMaxWidth(),
+            shape =
+                RoundedCornerShape(14.dp)
         ) {
             Text(
                 text =
-                    if (selectedSection == AuctionSection.ACTIVE) {
+                    if (
+                        selectedSection ==
+                            AuctionSection.ACTIVE
+                    ) {
                         "Ir para encerrados"
                     } else {
                         "Voltar para ativos"
                     },
-                fontWeight = FontWeight.SemiBold
+                fontWeight =
+                    FontWeight.SemiBold
             )
         }
     }
 }
 
 @Composable
-private fun FilterLabel(
-    text: String
-) {
-    Text(
-        text = text,
-        maxLines = 1,
-        overflow = TextOverflow.Clip,
-        fontSize = 11.sp,
-        fontWeight = FontWeight.Medium
-    )
-}
-
-private fun isResultPending(
-    auction: Auction
-): Boolean {
-    return auction.status == AuctionStatus.ACTIVE ||
-            auction.status == AuctionStatus.ENDED
-}
-
-@Composable
-private fun SummaryCard(
-    title: String,
-    value: String,
-    selected: Boolean,
-    onClick: () -> Unit,
-    modifier: Modifier = Modifier
-) {
-    Card(
-        onClick = onClick,
-        modifier = modifier,
-        shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(
-            containerColor =
-                if (selected) {
-                    MaterialTheme.colorScheme.primaryContainer
-                } else {
-                    MaterialTheme.colorScheme.surface
-                }
-        ),
-        elevation = CardDefaults.cardElevation(
-            defaultElevation =
-                if (selected) {
-                    4.dp
-                } else {
-                    2.dp
-                }
-        )
+private fun rememberAuctionBoundaryTime(
+    auctions: List<Auction>
+): Long {
+    val currentTime by produceState(
+        initialValue =
+            System.currentTimeMillis(),
+        key1 = auctions
     ) {
-        Column(
-            modifier = Modifier.padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(2.dp)
-        ) {
-            Text(
-                text = value,
-                style = MaterialTheme.typography.headlineSmall,
-                fontWeight = FontWeight.Bold
-            )
+        while (true) {
+            val now =
+                System.currentTimeMillis()
 
-            Text(
-                text = title,
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-        }
-    }
-}
+            value = now
 
-@Composable
-private fun EmptyAuctionsMessage(
-    text: String
-) {
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(
-            containerColor =
-                MaterialTheme.colorScheme.surfaceVariant
-        )
-    ) {
-        Column(
-            modifier = Modifier.padding(24.dp),
-            verticalArrangement = Arrangement.spacedBy(6.dp)
-        ) {
-            Text(
-                text = "Nada por aqui",
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.SemiBold
-            )
-
-            Text(
-                text = text,
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-        }
-    }
-}
-
-@Composable
-private fun AuctionCard(
-    auction: Auction,
-    currentTime: Long,
-    onClick: () -> Unit
-) {
-    val remainingTime =
-        calculateRemainingTime(
-            endTimeMillis = auction.endTimeMillis,
-            currentTimeMillis = currentTime
-        )
-
-    Card(
-        onClick = onClick,
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(18.dp),
-        elevation = CardDefaults.cardElevation(
-            defaultElevation = 3.dp
-        )
-    ) {
-        Column(
-            modifier = Modifier.padding(18.dp),
-            verticalArrangement = Arrangement.spacedBy(10.dp)
-        ) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(10.dp)
-            ) {
-                Surface(
-                    shape = RoundedCornerShape(8.dp),
-                    color =
-                        platformBackgroundColor(
-                            auction.platform
-                        )
-                ) {
-                    Text(
-                        text =
-                            platformBadge(
-                                auction.platform
-                            ),
-                        modifier = Modifier.padding(
-                            horizontal = 10.dp,
-                            vertical = 5.dp
-                        ),
-                        style = MaterialTheme.typography.labelMedium,
-                        fontWeight = FontWeight.Bold,
-                        color =
-                            platformTextColor(
-                                auction.platform
-                            )
-                    )
-                }
-
-                Text(
-                    text = auction.title,
-                    modifier = Modifier.weight(1f),
-                    style = MaterialTheme.typography.titleLarge,
-                    fontWeight = FontWeight.Bold
-                )
-            }
-
-            StatusBadge(
-                auction = auction,
-                currentTime = currentTime
-            )
-
-            Column(
-                verticalArrangement = Arrangement.spacedBy(5.dp)
-            ) {
-                InfoLine(
-                    label = "Encerramento",
-                    value =
-                        formatAuctionDate(
-                            auction.endTimeMillis
-                        )
-                )
-
-                InfoLine(
-                    label = "Lance inicial",
-                    value =
-                        formatMoney(
-                            auction.initialBidInCents
-                        )
-                )
-
-                if (auction.endTimeMillis > currentTime) {
-                    InfoLine(
-                        label = "Tempo restante",
-                        value = remainingTime
-                    )
-                } else {
-                    auction.finalPriceInCents?.let {
-                            finalPrice ->
-
-                        InfoLine(
-                            label = "Valor final",
-                            value =
-                                formatMoney(
-                                    finalPrice
-                                )
-                        )
+            val nextEndTime =
+                auctions
+                    .asSequence()
+                    .map {
+                        it.endTimeMillis
                     }
-                }
-            }
+                    .filter {
+                        it > now
+                    }
+                    .minOrNull()
+                    ?: break
+
+            val waitTime =
+                (
+                    nextEndTime -
+                        now +
+                        50L
+                    )
+                    .coerceAtLeast(1L)
+
+            delay(waitTime)
         }
     }
+
+    return currentTime
 }
 
 @Composable
-private fun StatusBadge(
-    auction: Auction,
-    currentTime: Long
-) {
-    val text =
-        when {
-            auction.endTimeMillis > currentTime ->
-                "Em andamento"
-
-            isResultPending(auction) ->
-                "Resultado pendente"
-
-            auction.status ==
-                    AuctionStatus.NOT_WON ->
-                "Não ganho"
-
-            auction.status ==
-                    AuctionStatus.WON_PENDING_PAYMENT ->
-                "A pagar"
-
-            auction.status ==
-                    AuctionStatus.WON_PAID ->
-                "Pago"
-
-            else ->
-                "Encerrado"
-        }
-
-    val backgroundColor =
-        when {
-            auction.endTimeMillis > currentTime ->
-                MaterialTheme.colorScheme.primaryContainer
-
-            isResultPending(auction) ->
-                Color(0xFF7C2D12)
-
-            auction.status ==
-                    AuctionStatus.NOT_WON ->
-                MaterialTheme.colorScheme.errorContainer
-
-            auction.status ==
-                    AuctionStatus.WON_PENDING_PAYMENT ->
-                Color(0xFF78350F)
-
-            auction.status ==
-                    AuctionStatus.WON_PAID ->
-                Color(0xFF14532D)
-
-            else ->
-                MaterialTheme.colorScheme.secondaryContainer
-        }
-
-    val textColor =
-        when {
-            auction.endTimeMillis > currentTime ->
-                MaterialTheme.colorScheme.onPrimaryContainer
-
-            isResultPending(auction) ->
-                Color(0xFFFED7AA)
-
-            auction.status ==
-                    AuctionStatus.NOT_WON ->
-                MaterialTheme.colorScheme.onErrorContainer
-
-            auction.status ==
-                    AuctionStatus.WON_PENDING_PAYMENT ->
-                Color(0xFFFDE68A)
-
-            auction.status ==
-                    AuctionStatus.WON_PAID ->
-                Color(0xFFBBF7D0)
-
-            else ->
-                MaterialTheme.colorScheme.onSecondaryContainer
-        }
-
-    Surface(
-        shape = RoundedCornerShape(50),
-        color = backgroundColor
+private fun ActiveAuctionsHeader() {
+    Column(
+        verticalArrangement =
+            Arrangement.spacedBy(4.dp)
     ) {
         Text(
-            text = text,
-            modifier = Modifier.padding(
-                horizontal = 12.dp,
-                vertical = 6.dp
-            ),
-            style = MaterialTheme.typography.labelLarge,
-            fontWeight = FontWeight.SemiBold,
-            color = textColor
+            text = "Leilões RetroGames",
+            style =
+                MaterialTheme
+                    .typography
+                    .headlineMedium,
+            fontWeight =
+                FontWeight.Bold
         )
-    }
-}
 
-@Composable
-private fun InfoLine(
-    label: String,
-    value: String
-) {
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement =
-            Arrangement.SpaceBetween
-    ) {
         Text(
-            text = label,
-            style = MaterialTheme.typography.bodyMedium,
+            text =
+                "Acompanhe seus leilões em um só lugar",
+            style =
+                MaterialTheme
+                    .typography
+                    .bodyMedium,
             color =
-                MaterialTheme.colorScheme.onSurfaceVariant
-        )
-
-        Text(
-            text = value,
-            style = MaterialTheme.typography.bodyMedium,
-            fontWeight = FontWeight.Medium
+                MaterialTheme
+                    .colorScheme
+                    .onSurfaceVariant
         )
     }
-}
-
-private fun calculateRemainingTime(
-    endTimeMillis: Long,
-    currentTimeMillis: Long
-): String {
-    val remainingMillis =
-        endTimeMillis - currentTimeMillis
-
-    if (remainingMillis <= 0) {
-        return "Encerrado"
-    }
-
-    val totalSeconds =
-        remainingMillis / 1_000
-
-    val days =
-        totalSeconds / 86_400
-
-    val hours =
-        (totalSeconds % 86_400) / 3_600
-
-    val minutes =
-        (totalSeconds % 3_600) / 60
-
-    val seconds =
-        totalSeconds % 60
-
-    return if (days > 0) {
-        "${days}d ${hours}h ${minutes}min"
-    } else {
-        "${hours}h ${minutes}min ${seconds}s"
-    }
-}
-
-private fun formatAuctionDate(
-    value: Long
-): String {
-    return Instant
-        .ofEpochMilli(value)
-        .atZone(ZoneId.systemDefault())
-        .format(cardDateFormatter)
-}
-
-private fun formatMoney(
-    valueInCents: Long
-): String {
-    val value =
-        BigDecimal.valueOf(
-            valueInCents,
-            2
-        )
-
-    return NumberFormat
-        .getCurrencyInstance(
-            Locale("pt", "BR")
-        )
-        .format(value)
 }
 
 @Preview(showBackground = true)
@@ -815,20 +382,28 @@ private fun formatMoney(
 fun ActiveAuctionsScreenPreview() {
     LeilõesRetroGamesTheme {
         ActiveAuctionsScreen(
-            auctions = listOf(
-                Auction(
-                    id = 1,
-                    title = "Resident Evil 2",
-                    platform = "PlayStation 2",
-                    postUrl = "https://facebook.com",
-                    endTimeMillis =
-                        System.currentTimeMillis() +
+            auctions =
+                listOf(
+                    Auction(
+                        id = 1,
+                        title =
+                            "Resident Evil 2",
+                        platform =
+                            "PlayStation 2",
+                        postUrl =
+                            "https://facebook.com",
+                        endTimeMillis =
+                            System
+                                .currentTimeMillis() +
                                 3_600_000,
-                    initialBidInCents = 500,
-                    bidIncrementInCents = 500
-                )
-            ),
-            selectedSection = AuctionSection.ACTIVE,
+                        initialBidInCents =
+                            500,
+                        bidIncrementInCents =
+                            500
+                    )
+                ),
+            selectedSection =
+                AuctionSection.ACTIVE,
             onSectionChange = {},
             onAuctionClick = {},
             onAddAuction = {}
