@@ -8,21 +8,30 @@ class AuctionRepository(
     private val auctionDao: AuctionDao
 ) {
 
-    val auctions: Flow<List<Auction>> = auctionDao.observeAll()
+    val auctions: Flow<List<Auction>> =
+        auctionDao.observeAll()
 
-    suspend fun insert(auction: Auction): Long {
-        return auctionDao.insert(auction)
+    suspend fun insert(
+        auction: Auction
+    ): Long {
+        return auctionDao.insert(
+            auction
+        )
     }
 
-    suspend fun update(auction: Auction) {
-        auctionDao.update(auction)
+    suspend fun update(
+        auction: Auction
+    ) {
+        auctionDao.update(
+            auction
+        )
     }
 
-    suspend fun delete(auction: Auction) {
-        auctionDao.delete(auction)
-    }
-
-    suspend fun getById(id: Long): Auction? {
-        return auctionDao.getById(id)
+    suspend fun delete(
+        auction: Auction
+    ) {
+        auctionDao.delete(
+            auction
+        )
     }
 }

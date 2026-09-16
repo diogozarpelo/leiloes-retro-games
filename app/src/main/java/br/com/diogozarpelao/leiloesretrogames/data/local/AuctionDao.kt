@@ -12,17 +12,22 @@ import kotlinx.coroutines.flow.Flow
 interface AuctionDao {
 
     @Insert
-    suspend fun insert(auction: Auction): Long
+    suspend fun insert(
+        auction: Auction
+    ): Long
 
     @Update
-    suspend fun update(auction: Auction)
+    suspend fun update(
+        auction: Auction
+    )
 
     @Delete
-    suspend fun delete(auction: Auction)
+    suspend fun delete(
+        auction: Auction
+    )
 
-    @Query("SELECT * FROM auctions ORDER BY endTimeMillis ASC")
+    @Query(
+        "SELECT * FROM auctions ORDER BY endTimeMillis ASC"
+    )
     fun observeAll(): Flow<List<Auction>>
-
-    @Query("SELECT * FROM auctions WHERE id = :id LIMIT 1")
-    suspend fun getById(id: Long): Auction?
 }
