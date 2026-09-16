@@ -1,6 +1,7 @@
 package br.com.diogozarpelao.leiloesretrogames.ui.screens
 
 import androidx.compose.ui.graphics.Color
+import java.util.Locale
 
 data class PlatformOption(
     val name: String,
@@ -156,29 +157,39 @@ val platformOptions = listOf(
     )
 )
 
-fun platformBadge(platform: String): String {
-    return platformOptions
-        .firstOrNull {
-            it.name.equals(platform, ignoreCase = true)
-        }
-        ?.badge
-        ?: platform.take(5).uppercase()
+private val platformOptionsByName =
+    platformOptions.associateBy { option ->
+        option.name.lowercase(Locale.ROOT)
+    }
+
+private fun findPlatformOption(
+    platform: String
+): PlatformOption? {
+    return platformOptionsByName[
+        platform.lowercase(Locale.ROOT)
+    ]
 }
 
-fun platformBackgroundColor(platform: String): Color {
-    return platformOptions
-        .firstOrNull {
-            it.name.equals(platform, ignoreCase = true)
-        }
+fun platformBadge(
+    platform: String
+): String {
+    return findPlatformOption(platform)
+        ?.badge
+        ?: platform.take(5).uppercase(Locale.ROOT)
+}
+
+fun platformBackgroundColor(
+    platform: String
+): Color {
+    return findPlatformOption(platform)
         ?.backgroundColor
         ?: Color(0xFF64748B)
 }
 
-fun platformTextColor(platform: String): Color {
-    return platformOptions
-        .firstOrNull {
-            it.name.equals(platform, ignoreCase = true)
-        }
+fun platformTextColor(
+    platform: String
+): Color {
+    return findPlatformOption(platform)
         ?.textColor
         ?: Color.White
 }
