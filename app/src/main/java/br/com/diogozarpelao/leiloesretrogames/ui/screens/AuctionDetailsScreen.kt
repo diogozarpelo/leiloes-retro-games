@@ -9,40 +9,27 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import br.com.diogozarpelao.leiloesretrogames.model.Auction
 import br.com.diogozarpelao.leiloesretrogames.model.AuctionStatus
-import br.com.diogozarpelao.leiloesretrogames.model.ItemCondition
 import br.com.diogozarpelao.leiloesretrogames.ui.theme.LeilõesRetroGamesTheme
-import java.math.BigDecimal
-import java.text.NumberFormat
-import java.time.Instant
-import java.time.ZoneId
-import java.time.format.DateTimeFormatter
-import java.util.Locale
-
-private val detailsDateFormatter: DateTimeFormatter =
-    DateTimeFormatter.ofPattern("dd/MM/yyyy 'às' HH:mm")
+import kotlinx.coroutines.delay
 
 @Composable
 fun AuctionDetailsScreen(
@@ -60,9 +47,14 @@ fun AuctionDetailsScreen(
 
     val uriHandler = LocalUriHandler.current
 
+    val currentTime =
+        rememberAuctionDetailsTime(
+            endTimeMillis =
+                auction.endTimeMillis
+        )
+
     val isEnded =
-        auction.endTimeMillis <=
-                System.currentTimeMillis()
+        auction.endTimeMillis <= currentTime
 
     Column(
         modifier = modifier
@@ -84,193 +76,55 @@ fun AuctionDetailsScreen(
         }
 
         Row(
-            modifier = Modifier.fillMaxWidth(),
+            modifier =
+                Modifier.fillMaxWidth(),
             horizontalArrangement =
                 Arrangement.spacedBy(10.dp)
         ) {
-            PlatformBadge(
-                platform = auction.platform
+            AuctionPlatformBadge(
+                platform =
+                    auction.platform
             )
 
             Text(
                 text = auction.title,
-                modifier = Modifier.weight(1f),
+                modifier =
+                    Modifier.weight(1f),
                 style =
-                    MaterialTheme.typography.headlineMedium,
-                fontWeight = FontWeight.Bold
+                    MaterialTheme
+                        .typography
+                        .headlineMedium,
+                fontWeight =
+                    FontWeight.Bold
             )
         }
 
         AuctionStatusBadge(
             auction = auction,
-            isEnded = isEnded
+            currentTime = currentTime
         )
 
-        Card(
-            modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(18.dp),
-            colors = CardDefaults.cardColors(
-                containerColor =
-                    MaterialTheme.colorScheme.surfaceVariant
-            )
-        ) {
-            Column(
-                modifier = Modifier.padding(18.dp),
-                verticalArrangement =
-                    Arrangement.spacedBy(12.dp)
-            ) {
-                Text(
-                    text = "Informações do leilão",
-                    style =
-                        MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.SemiBold
-                )
+        AuctionInformationCard(
+            auction = auction
+        )
 
-                DetailLine(
-                    label = "Encerramento",
-                    value =
-                        formatDateTime(
-                            auction.endTimeMillis
-                        )
-                )
-
-                DetailLine(
-                    label = "Lance inicial",
-                    value =
-                        formatMoney(
-                            auction.initialBidInCents
-                        )
-                )
-
-                DetailLine(
-                    label = "Múltiplo dos lances",
-                    value =
-                        formatMoney(
-                            auction.bidIncrementInCents
-                        )
-                )
-
-                auction.buyoutPriceInCents?.let {
-                    DetailLine(
-                        label = "Valor de arremate",
-                        value = formatMoney(it)
-                    )
-                }
-
-                auction.finalPriceInCents?.let {
-                    DetailLine(
-                        label = "Valor final",
-                        value = formatMoney(it),
-                        highlight = true
-                    )
-                }
-            }
-        }
-
-        Card(
-            modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(18.dp),
-            colors = CardDefaults.cardColors(
-                containerColor =
-                    MaterialTheme.colorScheme.surfaceVariant
-            )
-        ) {
-            Column(
-                modifier = Modifier.padding(18.dp),
-                verticalArrangement =
-                    Arrangement.spacedBy(12.dp)
-            ) {
-                Text(
-                    text = "Detalhes",
-                    style =
-                        MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.SemiBold
-                )
-
-                DetailLine(
-                    label = "Conservação",
-                    value =
-                        formatCondition(
-                            auction.condition
-                        )
-                )
-
-                DetailLine(
-                    label = "Alertas",
-                    value =
-                        if (auction.alertsEnabled) {
-                            "Ativados"
-                        } else {
-                            "Desativados"
-                        }
-                )
-            }
-        }
+        AuctionExtraDetailsCard(
+            auction = auction
+        )
 
         if (isEnded) {
-            Card(
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(18.dp)
-            ) {
-                Column(
-                    modifier = Modifier.padding(18.dp),
-                    verticalArrangement =
-                        Arrangement.spacedBy(12.dp)
-                ) {
-                    Text(
-                        text = "Resultado do leilão",
-                        style =
-                            MaterialTheme.typography.titleMedium,
-                        fontWeight =
-                            FontWeight.SemiBold
-                    )
-
-                    AuctionResultActions(
-                        status = auction.status,
-                        onStatusChange =
-                            onStatusChange,
-                        finalPriceInCents =
-                            auction.finalPriceInCents,
-                        onFinalPriceChange =
-                            onFinalPriceChange
-                    )
-                }
-            }
+            AuctionResultCard(
+                auction = auction,
+                onStatusChange =
+                    onStatusChange,
+                onFinalPriceChange =
+                    onFinalPriceChange
+            )
         }
 
-        if (auction.notes.isNotBlank()) {
-            Card(
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(18.dp),
-                colors = CardDefaults.cardColors(
-                    containerColor =
-                        MaterialTheme.colorScheme.surfaceVariant
-                )
-            ) {
-                Column(
-                    modifier = Modifier.padding(18.dp),
-                    verticalArrangement =
-                        Arrangement.spacedBy(8.dp)
-                ) {
-                    Text(
-                        text = "Descrição e observações",
-                        style =
-                            MaterialTheme.typography.titleMedium,
-                        fontWeight =
-                            FontWeight.SemiBold
-                    )
-
-                    Text(
-                        text = auction.notes,
-                        style =
-                            MaterialTheme.typography.bodyLarge,
-                        color =
-                            MaterialTheme.colorScheme
-                                .onSurfaceVariant
-                    )
-                }
-            }
-        }
+        AuctionNotesCard(
+            notes = auction.notes
+        )
 
         Button(
             onClick = {
@@ -280,23 +134,29 @@ fun AuctionDetailsScreen(
                     )
                 }
             },
-            modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(14.dp)
+            modifier =
+                Modifier.fillMaxWidth(),
+            shape =
+                RoundedCornerShape(14.dp)
         ) {
             Text(
                 text = "Abrir publicação",
-                fontWeight = FontWeight.SemiBold
+                fontWeight =
+                    FontWeight.SemiBold
             )
         }
 
         OutlinedButton(
             onClick = onEdit,
-            modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(14.dp)
+            modifier =
+                Modifier.fillMaxWidth(),
+            shape =
+                RoundedCornerShape(14.dp)
         ) {
             Text(
                 text = "Editar leilão",
-                fontWeight = FontWeight.SemiBold
+                fontWeight =
+                    FontWeight.SemiBold
             )
         }
 
@@ -304,289 +164,80 @@ fun AuctionDetailsScreen(
             onClick = {
                 showDeleteDialog = true
             },
-            modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(14.dp),
+            modifier =
+                Modifier.fillMaxWidth(),
+            shape =
+                RoundedCornerShape(14.dp),
             colors =
-                ButtonDefaults.outlinedButtonColors(
-                    contentColor =
-                        MaterialTheme.colorScheme.error
-                )
+                ButtonDefaults
+                    .outlinedButtonColors(
+                        contentColor =
+                            MaterialTheme
+                                .colorScheme
+                                .error
+                    )
         ) {
             Text(
                 text = "Excluir leilão",
-                fontWeight = FontWeight.SemiBold
+                fontWeight =
+                    FontWeight.SemiBold
             )
         }
 
         OutlinedButton(
             onClick = onBack,
-            modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(14.dp)
+            modifier =
+                Modifier.fillMaxWidth(),
+            shape =
+                RoundedCornerShape(14.dp)
         ) {
             Text(
                 text = "Voltar",
-                fontWeight = FontWeight.SemiBold
+                fontWeight =
+                    FontWeight.SemiBold
             )
         }
     }
 
     if (showDeleteDialog) {
-        AlertDialog(
-            onDismissRequest = {
+        AuctionDeleteDialog(
+            onConfirm = {
                 showDeleteDialog = false
+                onDelete()
             },
-            title = {
-                Text("Excluir leilão?")
-            },
-            text = {
-                Text(
-                    "Esta ação removerá o leilão permanentemente."
-                )
-            },
-            confirmButton = {
-                TextButton(
-                    onClick = {
-                        showDeleteDialog = false
-                        onDelete()
-                    }
-                ) {
-                    Text(
-                        text = "Excluir",
-                        color =
-                            MaterialTheme.colorScheme.error
-                    )
-                }
-            },
-            dismissButton = {
-                TextButton(
-                    onClick = {
-                        showDeleteDialog = false
-                    }
-                ) {
-                    Text("Cancelar")
-                }
+            onDismiss = {
+                showDeleteDialog = false
             }
         )
     }
 }
 
 @Composable
-private fun PlatformBadge(
-    platform: String
-) {
-    Surface(
-        shape = RoundedCornerShape(8.dp),
-        color =
-            platformBackgroundColor(
-                platform
-            )
+private fun rememberAuctionDetailsTime(
+    endTimeMillis: Long
+): Long {
+    val currentTime by produceState(
+        initialValue =
+            System.currentTimeMillis(),
+        key1 = endTimeMillis
     ) {
-        Text(
-            text = platformBadge(platform),
-            modifier = Modifier.padding(
-                horizontal = 10.dp,
-                vertical = 5.dp
-            ),
-            style =
-                MaterialTheme.typography.labelMedium,
-            fontWeight = FontWeight.Bold,
-            color =
-                platformTextColor(
-                    platform
-                )
-        )
-    }
-}
-
-@Composable
-private fun AuctionStatusBadge(
-    auction: Auction,
-    isEnded: Boolean
-) {
-    val resultPending =
-        isEnded &&
+        if (value < endTimeMillis) {
+            val waitTime =
                 (
-                        auction.status ==
-                                AuctionStatus.ACTIVE ||
-                                auction.status ==
-                                AuctionStatus.ENDED
-                        )
+                    endTimeMillis -
+                        value +
+                        50L
+                    )
+                    .coerceAtLeast(1L)
 
-    val text =
-        when {
-            !isEnded ->
-                "Em andamento"
+            delay(waitTime)
 
-            resultPending ->
-                "Resultado pendente"
-
-            auction.status ==
-                    AuctionStatus.NOT_WON ->
-                "Não ganho"
-
-            auction.status ==
-                    AuctionStatus.WON_PENDING_PAYMENT ->
-                "A pagar"
-
-            auction.status ==
-                    AuctionStatus.WON_PAID ->
-                "Pago"
-
-            else ->
-                "Encerrado"
+            value =
+                System.currentTimeMillis()
         }
-
-    val backgroundColor =
-        when {
-            !isEnded ->
-                MaterialTheme.colorScheme.primaryContainer
-
-            resultPending ->
-                Color(0xFF7C2D12)
-
-            auction.status ==
-                    AuctionStatus.NOT_WON ->
-                MaterialTheme.colorScheme.errorContainer
-
-            auction.status ==
-                    AuctionStatus.WON_PENDING_PAYMENT ->
-                Color(0xFF78350F)
-
-            auction.status ==
-                    AuctionStatus.WON_PAID ->
-                Color(0xFF14532D)
-
-            else ->
-                MaterialTheme.colorScheme.secondaryContainer
-        }
-
-    val textColor =
-        when {
-            !isEnded ->
-                MaterialTheme.colorScheme.onPrimaryContainer
-
-            resultPending ->
-                Color(0xFFFED7AA)
-
-            auction.status ==
-                    AuctionStatus.NOT_WON ->
-                MaterialTheme.colorScheme.onErrorContainer
-
-            auction.status ==
-                    AuctionStatus.WON_PENDING_PAYMENT ->
-                Color(0xFFFDE68A)
-
-            auction.status ==
-                    AuctionStatus.WON_PAID ->
-                Color(0xFFBBF7D0)
-
-            else ->
-                MaterialTheme.colorScheme.onSecondaryContainer
-        }
-
-    Surface(
-        shape = RoundedCornerShape(50),
-        color = backgroundColor
-    ) {
-        Text(
-            text = text,
-            modifier = Modifier.padding(
-                horizontal = 12.dp,
-                vertical = 6.dp
-            ),
-            style =
-                MaterialTheme.typography.labelMedium,
-            fontWeight = FontWeight.SemiBold,
-            color = textColor
-        )
     }
-}
 
-@Composable
-private fun DetailLine(
-    label: String,
-    value: String,
-    highlight: Boolean = false
-) {
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement =
-            Arrangement.SpaceBetween
-    ) {
-        Text(
-            text = label,
-            style =
-                MaterialTheme.typography.bodyMedium,
-            color =
-                MaterialTheme.colorScheme.onSurfaceVariant
-        )
-
-        Text(
-            text = value,
-            style =
-                MaterialTheme.typography.bodyMedium,
-            fontWeight =
-                if (highlight) {
-                    FontWeight.Bold
-                } else {
-                    FontWeight.Medium
-                },
-            color =
-                if (highlight) {
-                    MaterialTheme.colorScheme.primary
-                } else {
-                    MaterialTheme.colorScheme.onSurface
-                }
-        )
-    }
-}
-
-private fun formatDateTime(
-    value: Long
-): String {
-    return Instant.ofEpochMilli(value)
-        .atZone(ZoneId.systemDefault())
-        .format(detailsDateFormatter)
-}
-
-private fun formatMoney(
-    valueInCents: Long
-): String {
-    val value =
-        BigDecimal.valueOf(
-            valueInCents,
-            2
-        )
-
-    return NumberFormat
-        .getCurrencyInstance(
-            Locale("pt", "BR")
-        )
-        .format(value)
-}
-
-private fun formatCondition(
-    condition: ItemCondition
-): String {
-    return when (condition) {
-        ItemCondition.EXCELLENT ->
-            "Excelente"
-
-        ItemCondition.GOOD ->
-            "Bom"
-
-        ItemCondition.AVERAGE ->
-            "Médio"
-
-        ItemCondition.POOR ->
-            "Ruim"
-
-        ItemCondition.VERY_POOR ->
-            "Péssimo"
-
-        ItemCondition.NOT_INFORMED ->
-            "Não informado"
-    }
+    return currentTime
 }
 
 @Preview(showBackground = true)
@@ -598,15 +249,18 @@ fun AuctionDetailsScreenPreview() {
                 id = 1,
                 title = "Resident Evil 2",
                 platform = "PlayStation 2",
-                postUrl = "https://facebook.com",
+                postUrl =
+                    "https://facebook.com",
                 endTimeMillis =
                     1_700_000_000_000,
                 notes =
                     "Jogo original em bom estado.",
                 initialBidInCents = 500,
                 bidIncrementInCents = 500,
-                buyoutPriceInCents = 10_000,
-                status = AuctionStatus.ENDED
+                buyoutPriceInCents =
+                    10_000,
+                status =
+                    AuctionStatus.ENDED
             ),
             onBack = {},
             onEdit = {},

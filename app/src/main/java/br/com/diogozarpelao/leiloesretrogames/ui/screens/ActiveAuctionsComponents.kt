@@ -278,6 +278,39 @@ internal fun EmptyAuctionsMessage(
 }
 
 @Composable
+internal fun AuctionPlatformBadge(
+    platform: String
+) {
+    Surface(
+        shape = RoundedCornerShape(8.dp),
+        color =
+            platformBackgroundColor(
+                platform
+            )
+    ) {
+        Text(
+            text =
+                platformBadge(platform),
+            modifier =
+                Modifier.padding(
+                    horizontal = 10.dp,
+                    vertical = 5.dp
+                ),
+            style =
+                MaterialTheme
+                    .typography
+                    .labelMedium,
+            fontWeight =
+                FontWeight.Bold,
+            color =
+                platformTextColor(
+                    platform
+                )
+        )
+    }
+}
+
+@Composable
 internal fun AuctionCard(
     auction: Auction,
     onClick: () -> Unit
@@ -316,36 +349,9 @@ internal fun AuctionCard(
                 horizontalArrangement =
                     Arrangement.spacedBy(10.dp)
             ) {
-                Surface(
-                    shape =
-                        RoundedCornerShape(8.dp),
-                    color =
-                        platformBackgroundColor(
-                            auction.platform
-                        )
-                ) {
-                    Text(
-                        text =
-                            platformBadge(
-                                auction.platform
-                            ),
-                        modifier =
-                            Modifier.padding(
-                                horizontal = 10.dp,
-                                vertical = 5.dp
-                            ),
-                        style =
-                            MaterialTheme
-                                .typography
-                                .labelMedium,
-                        fontWeight =
-                            FontWeight.Bold,
-                        color =
-                            platformTextColor(
-                                auction.platform
-                            )
-                    )
-                }
+                AuctionPlatformBadge(
+                    platform = auction.platform
+                )
 
                 Text(
                     text = auction.title,
@@ -430,7 +436,7 @@ private fun rememberAuctionCardTime(
 }
 
 @Composable
-private fun AuctionStatusBadge(
+internal fun AuctionStatusBadge(
     auction: Auction,
     currentTime: Long
 ) {
