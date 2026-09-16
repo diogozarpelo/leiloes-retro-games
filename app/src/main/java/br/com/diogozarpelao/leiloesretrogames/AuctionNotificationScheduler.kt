@@ -8,11 +8,14 @@ import android.os.Build
 import br.com.diogozarpelao.leiloesretrogames.model.Auction
 
 class AuctionNotificationScheduler(
-    private val context: Context
+    context: Context
 ) {
 
+    private val appContext =
+        context.applicationContext
+
     private val alarmManager =
-        context.getSystemService(
+        appContext.getSystemService(
             Context.ALARM_SERVICE
         ) as AlarmManager
 
@@ -25,28 +28,39 @@ class AuctionNotificationScheduler(
             return
         }
 
-        ALERT_MINUTES.forEach { minutesBefore ->
-            scheduleAlert(
-                auction = auction,
-                minutesBefore = minutesBefore
-            )
-        }
+        AuctionNotificationContract
+            .ALERT_MINUTES
+            .forEach { minutesBefore ->
+                scheduleAlert(
+                    auction = auction,
+                    minutesBefore =
+                        minutesBefore
+                )
+            }
     }
 
     fun cancel(
         auctionId: Long
     ) {
-        ALERT_MINUTES.forEach { minutesBefore ->
-            val pendingIntent =
-                createPendingIntent(
-                    auctionId = auctionId,
-                    auctionTitle = "",
-                    minutesBefore = minutesBefore
+        AuctionNotificationContract
+            .ALERT_MINUTES
+            .forEach { minutesBefore ->
+                val pendingIntent =
+                    createPendingIntent(
+                        auctionId =
+                            auctionId,
+                        auctionTitle =
+                            "",
+                        minutesBefore =
+                            minutesBefore
+                    )
+
+                alarmManager.cancel(
+                    pendingIntent
                 )
 
-            alarmManager.cancel(pendingIntent)
-            pendingIntent.cancel()
-        }
+                pendingIntent.cancel()
+            }
     }
 
     private fun scheduleAlert(
@@ -55,35 +69,45 @@ class AuctionNotificationScheduler(
     ) {
         val triggerTime =
             auction.endTimeMillis -
-                    (minutesBefore * 60_000L)
+                (minutesBefore * 60_000L)
 
-        if (triggerTime <= System.currentTimeMillis()) {
+        if (
+            triggerTime <=
+                System.currentTimeMillis()
+        ) {
             return
         }
 
         val pendingIntent =
             createPendingIntent(
-                auctionId = auction.id,
-                auctionTitle = auction.title,
-                minutesBefore = minutesBefore
+                auctionId =
+                    auction.id,
+                auctionTitle =
+                    auction.title,
+                minutesBefore =
+                    minutesBefore
             )
 
         val canUseExactAlarm =
-            Build.VERSION.SDK_INT < Build.VERSION_CODES.S ||
-                    alarmManager.canScheduleExactAlarms()
+            Build.VERSION.SDK_INT <
+                Build.VERSION_CODES.S ||
+                alarmManager
+                    .canScheduleExactAlarms()
 
         if (canUseExactAlarm) {
-            alarmManager.setExactAndAllowWhileIdle(
-                AlarmManager.RTC_WAKEUP,
-                triggerTime,
-                pendingIntent
-            )
+            alarmManager
+                .setExactAndAllowWhileIdle(
+                    AlarmManager.RTC_WAKEUP,
+                    triggerTime,
+                    pendingIntent
+                )
         } else {
-            alarmManager.setAndAllowWhileIdle(
-                AlarmManager.RTC_WAKEUP,
-                triggerTime,
-                pendingIntent
-            )
+            alarmManager
+                .setAndAllowWhileIdle(
+                    AlarmManager.RTC_WAKEUP,
+                    triggerTime,
+                    pendingIntent
+                )
         }
     }
 
@@ -92,46 +116,41 @@ class AuctionNotificationScheduler(
         auctionTitle: String,
         minutesBefore: Int
     ): PendingIntent {
-        val intent = Intent(
-            context,
-            AuctionNotificationReceiver::class.java
-        ).apply {
-            putExtra(
-                AuctionNotificationReceiver.EXTRA_AUCTION_ID,
-                auctionId
-            )
+        val intent =
+            Intent(
+                appContext,
+                AuctionNotificationReceiver::class.java
+            ).apply {
+                putExtra(
+                    AuctionNotificationContract
+                        .EXTRA_AUCTION_ID,
+                    auctionId
+                )
 
-            putExtra(
-                AuctionNotificationReceiver.EXTRA_AUCTION_TITLE,
-                auctionTitle
-            )
+                putExtra(
+                    AuctionNotificationContract
+                        .EXTRA_AUCTION_TITLE,
+                    auctionTitle
+                )
 
-            putExtra(
-                AuctionNotificationReceiver.EXTRA_MINUTES_BEFORE,
-                minutesBefore
-            )
-        }
-
-        val requestCode =
-            (auctionId.toInt() * 100) + minutesBefore
+                putExtra(
+                    AuctionNotificationContract
+                        .EXTRA_MINUTES_BEFORE,
+                    minutesBefore
+                )
+            }
 
         return PendingIntent.getBroadcast(
-            context,
-            requestCode,
+            appContext,
+            AuctionNotificationContract.eventId(
+                auctionId =
+                    auctionId,
+                minutesBefore =
+                    minutesBefore
+            ),
             intent,
             PendingIntent.FLAG_UPDATE_CURRENT or
-                    PendingIntent.FLAG_IMMUTABLE
+                PendingIntent.FLAG_IMMUTABLE
         )
-    }
-
-    companion object {
-        val ALERT_MINUTES =
-            listOf(
-                60,
-                30,
-                15,
-                10,
-                5
-            )
     }
 }

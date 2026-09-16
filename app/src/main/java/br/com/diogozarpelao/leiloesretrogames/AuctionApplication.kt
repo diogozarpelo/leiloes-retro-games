@@ -14,7 +14,9 @@ class AuctionApplication : Application() {
     }
 
     val repository by lazy {
-        AuctionRepository(database.auctionDao())
+        AuctionRepository(
+            database.auctionDao()
+        )
     }
 
     override fun onCreate() {
@@ -23,9 +25,16 @@ class AuctionApplication : Application() {
     }
 
     private fun createNotificationChannel() {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            val channel = NotificationChannel(
-                AUCTION_NOTIFICATION_CHANNEL_ID,
+        if (
+            Build.VERSION.SDK_INT <
+                Build.VERSION_CODES.O
+        ) {
+            return
+        }
+
+        val channel =
+            NotificationChannel(
+                AuctionNotificationContract.CHANNEL_ID,
                 "Alertas de leilões",
                 NotificationManager.IMPORTANCE_HIGH
             ).apply {
@@ -33,15 +42,14 @@ class AuctionApplication : Application() {
                     "Avisos antes do encerramento dos leilões"
             }
 
-            val notificationManager =
-                getSystemService(NotificationManager::class.java)
+        val notificationManager =
+            getSystemService(
+                NotificationManager::class.java
+            )
 
-            notificationManager.createNotificationChannel(channel)
-        }
-    }
-
-    companion object {
-        const val AUCTION_NOTIFICATION_CHANNEL_ID =
-            "auction_alerts"
+        notificationManager
+            .createNotificationChannel(
+                channel
+            )
     }
 }
