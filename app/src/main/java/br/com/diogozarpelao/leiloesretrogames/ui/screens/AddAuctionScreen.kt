@@ -14,6 +14,7 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.produceState
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
@@ -23,6 +24,7 @@ import br.com.diogozarpelao.leiloesretrogames.model.Auction
 import br.com.diogozarpelao.leiloesretrogames.model.AuctionStatus
 import br.com.diogozarpelao.leiloesretrogames.model.ItemCondition
 import br.com.diogozarpelao.leiloesretrogames.ui.theme.LeilõesRetroGamesTheme
+import kotlinx.coroutines.delay
 
 @Composable
 fun AddAuctionScreen(
@@ -170,10 +172,15 @@ fun AddAuctionScreen(
         buyoutPrice.isBlank() ||
             buyoutPriceInCents != null
 
+    val currentTime =
+        rememberAuctionFormBoundaryTime(
+            endTimeMillis = endTimeMillis
+        )
+
     val endTimeIsValid =
         endTimeMillis != null &&
             endTimeMillis >
-                System.currentTimeMillis()
+                currentTime
 
     val formIsValid =
         title.isNotBlank() &&
@@ -390,6 +397,38 @@ fun AddAuctionScreen(
     }
 }
 
+@Composable
+private fun rememberAuctionFormBoundaryTime(
+    endTimeMillis: Long?
+): Long {
+    val currentTime by produceState(
+        initialValue =
+            System.currentTimeMillis(),
+        key1 =
+            endTimeMillis
+    ) {
+        val targetTime =
+            endTimeMillis
+                ?: return@produceState
+
+        if (value < targetTime) {
+            val waitTime =
+                (
+                    targetTime -
+                        value +
+                        50L
+                    )
+                    .coerceAtLeast(1L)
+
+            delay(waitTime)
+
+            value =
+                System.currentTimeMillis()
+        }
+    }
+
+    return currentTime
+}
 @Preview(showBackground = true)
 @Composable
 fun AddAuctionScreenPreview() {
